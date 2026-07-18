@@ -1,0 +1,56 @@
+#!/usr/bin/env php
+<?php
+
+use Illuminate\Foundation\Application;
+use Illuminate\Support\Env;
+use Symfony\Component\Console\Input\ArgvInput;
+
+define('LARAVEL_START', microtime(true));
+
+// Register the Composer autoloader...
+require __DIR__.'/vendor/autoload.php';
+
+// The installer must read the current .env before Laravel can load stale cached config.
+$input = new ArgvInput;
+$isInstaller = $input->getFirstArgument() === 'kexi:install'
+    && ! $input->hasParameterOption(['--help', '-h', '--version', '-V']);
+
+if ($isInstaller) {
+    $configCache = Env::get('APP_CONFIG_CACHE');
+
+    if (! $configCache) {
+        $environmentFile = '.env';
+
+        if ($input->hasParameterOption('--env')) {
+            $candidate = '.env.'.$input->getParameterOption('--env');
+            $environmentFile = is_file(__DIR__.'/'.$candidate) ? $candidate : $environmentFile;
+        } elseif (($environment = Env::get('APP_ENV')) && is_file(__DIR__.'/.env.'.$environment)) {
+            $environmentFile = '.env.'.$environment;
+        }
+
+        if (is_file(__DIR__.'/'.$environmentFile)) {
+            $variables = Dotenv\Dotenv::parse((string) file_get_contents(__DIR__.'/'.$environmentFile));
+            $configCache = $variables['APP_CONFIG_CACHE'] ?? null;
+        }
+    }
+
+    $configCache = (string) ($configCache ?: __DIR__.'/bootstrap/cache/config.php');
+    $isAbsolute = str_starts_with($configCache, '/')
+        || str_starts_with($configCache, '\\')
+        || preg_match('/^[A-Za-z]:[\\\\\/]/', $configCache) === 1;
+    $configCache = $isAbsolute ? $configCache : __DIR__.'/'.$configCache;
+
+    if (is_file($configCache) && ! unlink($configCache)) {
+        fwrite(STDERR, "Unable to remove stale configuration cache: {$configCache}".PHP_EOL);
+
+        exit(1);
+    }
+}
+
+// Bootstrap Laravel and handle the command...
+/** @var Application $app */
+$app = require_once __DIR__.'/bootstrap/app.php';
+
+$status = $app->handleCommand($input);
+
+exit($status);

@@ -3,6 +3,10 @@
     $weekCount = max(1, (int) $timetable->week_count);
     $previousWeek = max(1, $weekNumber - 1);
     $nextWeek = min($weekCount, $weekNumber + 1);
+    $weekStartDate = $timetable->term_start_date?->copy()->addWeeks($weekNumber - 1);
+    $weekDates = $weekStartDate
+        ? collect(range(0, 6))->map(fn (int $day) => $weekStartDate->copy()->addDays($day))
+        : collect();
     $weekdays = [1 => '周一', 2 => '周二', 3 => '周三', 4 => '周四', 5 => '周五', 6 => '周六', 7 => '周日'];
     $items = collect(data_get($analysis, 'items', []));
     $itemsByDay = $items->groupBy(fn ($item) => (int) data_get($item, 'meeting.weekday'));
@@ -92,7 +96,18 @@
                     <div class="calendar-weekdays">
                         <div class="calendar-time-heading">时间</div>
                         @foreach ($weekdays as $weekdayNumber => $weekday)
-                            <div class="calendar-weekday {{ $weekdayNumber >= 6 ? 'calendar-weekday--weekend' : '' }}">{{ $weekday }}</div>
+                            @php
+                                $weekdayDate = $weekDates->get($weekdayNumber - 1);
+                            @endphp
+                            <div
+                                class="calendar-weekday {{ $weekdayNumber >= 6 ? 'calendar-weekday--weekend' : '' }}"
+                                aria-label="{{ $weekdayDate ? $weekday.'，'.$weekdayDate->format('n月j日') : $weekday }}"
+                            >
+                                <span class="calendar-weekday__label">{{ $weekday }}</span>
+                                @if ($weekdayDate)
+                                    <time class="calendar-weekday__date" datetime="{{ $weekdayDate->toDateString() }}">{{ $weekdayDate->format('n/j') }}</time>
+                                @endif
+                            </div>
                         @endforeach
                     </div>
 

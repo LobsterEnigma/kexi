@@ -329,11 +329,20 @@ const drawWeekExport = (canvas, data, theme) => {
         ctx.lineTo(x, gridY + gridHeight);
         ctx.stroke();
 
+        const weekDate = data.weekDates?.[day] || '';
+        const headerCenterY = gridY + dayHeaderHeight / 2;
+
         ctx.fillStyle = day === 0 ? theme.accent : '#344054';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        setFont(ctx, 24, 800);
-        ctx.fillText(data.weekdays?.[day] || '', x + dayWidth / 2, gridY + dayHeaderHeight / 2 + 1);
+        setFont(ctx, 23, 800);
+        ctx.fillText(data.weekdays?.[day] || '', x + dayWidth / 2, headerCenterY - (weekDate ? 12 : 0));
+
+        if (weekDate) {
+            ctx.fillStyle = day === 0 ? theme.accent : '#7a8795';
+            setFont(ctx, 15, 600);
+            ctx.fillText(weekDate, x + dayWidth / 2, headerCenterY + 18);
+        }
     }
     ctx.textAlign = 'left';
 

@@ -17,11 +17,12 @@ class Course extends Model
         'notes',
         'sort_order',
         'is_archived',
+        'type_colors',
     ];
 
     protected function casts(): array
     {
-        return ['is_archived' => 'boolean'];
+        return ['is_archived' => 'boolean', 'type_colors' => 'array'];
     }
 
     public function timetable(): BelongsTo

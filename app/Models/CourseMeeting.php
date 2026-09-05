@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\WeekMode;
+use App\Support\CourseColors;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -42,6 +43,22 @@ class CourseMeeting extends Model
     public function cancellations(): HasMany
     {
         return $this->hasMany(CourseMeetingCancellation::class);
+    }
+
+    public function color(): string
+    {
+        return ($this->course->type_colors ?? [])[CourseColors::key($this->label)]
+            ?? CourseColors::PRESETS[(int) $this->course_id % 6];
+    }
+
+    public function colorAppearance(): array
+    {
+        return CourseColors::appearance($this->color());
+    }
+
+    public function colorStyle(): string
+    {
+        return collect($this->colorAppearance())->map(fn (string $color, string $key): string => "--custom-{$key}: {$color}")->implode('; ');
     }
 
     public function occursInWeek(int $week): bool

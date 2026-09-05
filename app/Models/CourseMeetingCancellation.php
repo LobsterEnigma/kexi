@@ -7,7 +7,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CourseMeetingCancellation extends Model
 {
-    protected $fillable = ['week_number'];
+    public const REASONS = [
+        'holiday' => '节假日',
+        'illness' => '身体不适',
+        'personal' => '个人请假',
+        'teacher' => '教师停课',
+        'emergency' => '突发事件',
+        'other' => '其他',
+    ];
+
+    protected $fillable = ['week_number', 'reason', 'note'];
 
     protected function casts(): array
     {

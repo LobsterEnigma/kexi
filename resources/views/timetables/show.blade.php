@@ -41,6 +41,8 @@
         }
 
         return [
+            'id' => $meeting['id'] ?? null,
+            'color' => $meeting['color'] ?? '#2f67c7',
             'label' => $meeting['label'] ?? '',
             'teacher' => $meeting['teacher'] ?? '',
             'weekday' => (int) ($meeting['weekday'] ?? 1),
@@ -65,6 +67,8 @@
             $mode = $row->week_mode instanceof \BackedEnum ? $row->week_mode->value : (string) $row->week_mode;
 
             return $normalizeMeeting([
+                'id' => $row->id,
+                'color' => $row->color(),
                 'label' => $row->label,
                 'teacher' => $row->teacher,
                 'weekday' => $row->weekday,
@@ -108,6 +112,10 @@
             $endsAt = substr((string) $selectedMeeting->ends_at, 0, 5);
 
             $occurrence = [
+                'meetingId' => $selectedMeeting->id,
+                'reasonSummary' => ($cancellation = $selectedMeeting->cancellations->firstWhere('week_number', $occurrenceWeek))
+                    ? (\App\Models\CourseMeetingCancellation::REASONS[$cancellation->reason] ?? '历史记录').($cancellation->note ? ' · '.$cancellation->note : '')
+                    : '',
                 'week' => $occurrenceWeek,
                 'isCanceled' => $canceledWeeks->contains($occurrenceWeek),
                 'summary' => '第 '.$occurrenceWeek.' 周 · '.($weekdays[(int) $selectedMeeting->weekday] ?? '').' '.$startsAt.'–'.$endsAt,
@@ -120,6 +128,7 @@
         }
 
         return [
+            'id' => $course->id,
             'action' => route('courses.update', [$timetable, $course]),
             'destroyAction' => route('courses.destroy', [$timetable, $course]),
             'archiveAction' => route('courses.archive', [$timetable, $course]),
@@ -132,6 +141,24 @@
             'occurrence' => $occurrence,
         ];
     };
+
+    $initialCoursePayload = null;
+    if (in_array($initialModal, ['course-editor', 'occurrence-cancellations'], true)) {
+        $initialCourse = $timetable->courses->firstWhere('id', (int) old('course_id'));
+        if ($initialCourse) {
+            $initialMeeting = $initialCourse->meetings->firstWhere('id', (int) old('meeting_id'));
+            $initialCoursePayload = $buildCoursePayload($initialCourse, $initialMeeting, (int) old('occurrence_week', $weekNumber));
+            if ($initialModal === 'course-editor') {
+                $initialCoursePayload = array_replace($initialCoursePayload, [
+                    'name' => old('name'), 'code' => old('code'), 'notes' => old('notes'),
+                    'meetings' => collect(old('meetings', []))->map(fn ($row) => $normalizeMeeting($row))->all(),
+                ]);
+            }
+        }
+    }
+    $initialCancellation = $initialModal === 'occurrence-cancellations'
+        ? ['mode' => old('cancellation_mode', 'sync'), 'weeks' => old('weeks', []), 'reason' => old('reason', ''), 'note' => old('note', '')]
+        : null;
 
     $statusLabels = static function (string $status, mixed $gap) use ($nearThreshold): string {
         return match ($status) {
@@ -170,6 +197,7 @@
             'teacher' => (string) $meeting->teacher,
             'status' => (string) data_get($item, 'status', 'slack_deep'),
             'tone' => (int) $course->getKey() % 6,
+            'appearance' => $meeting->colorAppearance(),
         ];
     })->values()->all();
     $exportMonthCells = $isMonthView
@@ -185,6 +213,7 @@
                     'time' => substr((string) $meeting->starts_at, 0, 5),
                     'status' => $meeting->isCanceledInWeek($cellWeek) ? 'canceled' : 'normal',
                     'tone' => (int) $course->getKey() % 6,
+                    'appearance' => $meeting->colorAppearance(),
                 ];
             })->values()->all();
 
@@ -241,6 +270,8 @@
             weekCount: @js($weekCount),
             createMeetings: @js($createMeetings),
             initialModal: @js($initialModal),
+            initialCourse: @js($initialCoursePayload),
+            initialCancellation: @js($initialCancellation),
             termStartDate: @js($timetable->term_start_date?->toDateString()),
             timetableUrl: @js(route('timetables.show', $timetable)),
             exportData: @js($exportData),
@@ -425,6 +456,7 @@
                                 <i data-lucide="eye-off" class="h-4 w-4"></i>已隐藏 {{ $archivedCourses->count() }}
                             </button>
                         @endif
+                        <a class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-slate-50" href="{{ route('timetables.cancellation-records', $timetable) }}"><i data-lucide="calendar-x-2" class="h-4 w-4"></i>请假与停课记录</a>
                         <button class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-slate-50" type="button" x-on:click="openDialog('share')">
                             <i data-lucide="share-2" class="h-4 w-4"></i>分享课表
                         </button>
@@ -452,6 +484,7 @@
                     aria-selected="{{ $isMonthView ? 'true' : 'false' }}"
                     @if (! $timetable->term_start_date) aria-disabled="true" tabindex="-1" title="请先设置开学日期" @endif
                 >月视图</a>
+                <a class="wb-tab wb-tab--records" href="{{ route('timetables.cancellation-records', $timetable) }}">请假记录</a>
                 <button class="wb-tab wb-tab--diagnostics" type="button" aria-selected="false" x-on:click="diagnosticsOpen = true; diagnosticFilter = 'all'">
                     学期问题
                 </button>
@@ -567,6 +600,7 @@
                                             <button
                                                 class="month-event {{ $isCanceled ? 'month-event--canceled' : '' }}"
                                                 data-course-tone="{{ (int) $course->getKey() % 6 }}"
+                                                style="{{ $meeting->colorStyle() }}"
                                                 type="button"
                                                 x-on:click="openCourse({{ Illuminate\Support\Js::from($coursePayload) }})"
                                                 title="{{ $course->name }} · {{ $startsAt }}–{{ $endsAt }}{{ $isCanceled ? ' · 已取消' : '' }}{{ $meeting->location ? ' · '.$meeting->location : '' }}"
@@ -659,7 +693,7 @@
                                     <button
                                         class="course-event course-event--{{ $status }} {{ $compactClass }} {{ $courseCode !== '' ? 'course-event--has-code' : '' }} {{ $usesCodeAsTitle ? 'course-event--code-title' : '' }}"
                                         data-course-tone="{{ (int) $course->getKey() % 6 }}"
-                                        style="--event-top: {{ $top }}px; --event-height: {{ $height }}px; --lane: {{ $lane }}; --lane-count: {{ $laneCount }}"
+                                        style="--event-top: {{ $top }}px; --event-height: {{ $height }}px; --lane: {{ $lane }}; --lane-count: {{ $laneCount }}; {{ $meeting->colorStyle() }}"
                                         type="button"
                                         x-on:click="openCourse({{ Illuminate\Support\Js::from($coursePayload) }})"
                                         title="{{ implode(' · ', array_filter([(string) $course->name, $courseCode, $startsAt.'–'.$endsAt, (string) $meeting->location])) }}"
@@ -836,8 +870,12 @@
                 @csrf
                 @method('PATCH')
                 <input type="hidden" name="_form" value="course-editor">
+                <input type="hidden" name="course_id" x-bind:value="courseEditor.id">
+                <input type="hidden" name="meeting_id" x-bind:value="courseEditor.occurrence?.meetingId">
+                <input type="hidden" name="occurrence_week" x-bind:value="courseEditor.occurrence?.week">
 
                 <div class="wb-modal-body">
+                    @if ($errors->any() && old('_form') === 'course-editor')<div class="wb-alert" role="alert">{{ $errors->first() }}</div>@endif
                     <template x-if="courseEditor.occurrence">
                         <section class="wb-occurrence-panel" aria-label="本次课程状态">
                             <div class="min-w-0">
@@ -850,12 +888,13 @@
                                     x-bind:data-canceled="courseEditor.occurrence.isCanceled ? 'true' : 'false'"
                                     x-text="courseEditor.occurrence.isCanceled ? '本次已取消' : '本次正常上课'"
                                 ></span>
+                                <p class="wb-occurrence-reason" x-show="courseEditor.occurrence.reasonSummary" x-text="courseEditor.occurrence.reasonSummary"></p>
                             </div>
                             <div class="wb-occurrence-panel__actions">
                                 <button
                                     class="wb-btn"
-                                    type="submit"
-                                    form="course-occurrence-cancel-form"
+                                    type="button"
+                                    x-on:click="openCancellationManager('single')"
                                     x-show="!courseEditor.occurrence.isCanceled"
                                 >
                                     <i data-lucide="calendar-x-2"></i>取消本次
@@ -894,11 +933,6 @@
                 </div>
             </form>
 
-            <form id="course-occurrence-cancel-form" method="POST" x-bind:action="courseEditor.occurrence?.cancelAction">
-                @csrf
-                <input type="hidden" name="weeks[]" x-bind:value="courseEditor.occurrence?.week">
-            </form>
-
             <form id="course-occurrence-restore-form" method="POST" x-bind:action="courseEditor.occurrence?.restoreAction">
                 @csrf
                 @method('DELETE')
@@ -932,14 +966,18 @@
         </x-workbench.dialog>
 
         <x-workbench.dialog name="occurrence-cancellations" size="sm">
-            <form class="wb-modal-form" method="POST" x-bind:action="cancellationEditor.syncAction">
+            <form class="wb-modal-form" method="POST" x-bind:action="cancellationEditor.action">
                 @csrf
-                @method('PUT')
+                <input type="hidden" name="_method" x-bind:value="cancellationEditor.mode === 'single' ? 'POST' : 'PUT'">
                 <input type="hidden" name="_form" value="occurrence-cancellations">
+                <input type="hidden" name="course_id" x-bind:value="courseEditor.id">
+                <input type="hidden" name="meeting_id" x-bind:value="courseEditor.occurrence?.meetingId">
+                <input type="hidden" name="occurrence_week" x-bind:value="courseEditor.occurrence?.week">
+                <input type="hidden" name="cancellation_mode" x-bind:value="cancellationEditor.mode">
 
                 <div class="wb-modal-header">
                     <div>
-                        <h2 class="wb-modal-title">批量管理停课</h2>
+                        <h2 class="wb-modal-title" x-text="cancellationEditor.mode === 'single' ? '取消本次课程' : '批量管理停课'"></h2>
                         <p class="wb-modal-subtitle" x-text="cancellationEditor.summary"></p>
                     </div>
                     <button class="wb-icon-btn" type="button" x-on:click="closeDialog()" title="关闭" aria-label="关闭">
@@ -955,13 +993,24 @@
                 @endif
 
                 <div class="wb-modal-body">
-                    <div class="wb-cancellation-toolbar">
+                    <label class="wb-field-group">
+                        <span class="wb-label">本次新增停课原因</span>
+                        <select class="wb-select" name="reason" x-model="cancellationEditor.reason" x-bind:required="hasNewCancellations()">
+                            <option value="">请选择原因</option>
+                            @foreach (\App\Models\CourseMeetingCancellation::REASONS as $key => $label)<option value="{{ $key }}">{{ $label }}</option>@endforeach
+                        </select>
+                    </label>
+                    <label class="wb-field-group">
+                        <span class="wb-label">补充备注</span>
+                        <textarea class="wb-textarea" name="note" x-model="cancellationEditor.note" maxlength="1000" x-bind:required="hasNewCancellations() && cancellationEditor.reason === 'other'"></textarea>
+                    </label>
+                    <div class="wb-cancellation-toolbar" x-show="cancellationEditor.mode !== 'single'">
                         <span><strong x-text="cancellationEditor.weeks.length"></strong> 次已取消</span>
                         <button class="wb-btn" type="button" x-on:click="cancellationEditor.weeks = []">
                             <i data-lucide="rotate-ccw"></i>全部恢复
                         </button>
                     </div>
-                    <div class="wb-cancellation-grid">
+                    <div class="wb-cancellation-grid" x-show="cancellationEditor.mode !== 'single'">
                         <template x-for="option in cancellationEditor.options" x-bind:key="option.week">
                             <label class="wb-cancellation-option">
                                 <input

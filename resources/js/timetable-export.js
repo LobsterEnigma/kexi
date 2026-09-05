@@ -149,17 +149,14 @@ const drawBadge = (ctx, text, x, y, options = {}) => {
 };
 
 const statusAppearance = (item) => {
-    if (item.status === 'conflict') {
-        return { accent: '#d92d20', border: '#f2b8b4', surface: '#fff4f3', text: '#7a271a', label: '冲突' };
-    }
     if (item.status === 'canceled') {
         return { accent: '#7b8794', border: '#b8c0ca', surface: '#f2f4f7', text: '#5d6875', label: '已取消' };
     }
 
-    const tone = COURSE_TONES[Math.abs(Number(item.tone || 0)) % COURSE_TONES.length];
+    const tone = item.appearance || COURSE_TONES[Math.abs(Number(item.tone || 0)) % COURSE_TONES.length];
     return {
         ...tone,
-        label: item.status === 'near' ? '临近' : '',
+        label: item.status === 'conflict' ? '冲突' : item.status === 'near' ? '临近' : '',
     };
 };
 

@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Enums\WeekMode;
 use App\Models\Timetable;
+use App\Support\CourseColors;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -17,7 +18,10 @@ class StoreCourseRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $meetings = collect($this->input('meetings', []))->map(function ($meeting): array {
+        $meetings = collect($this->input('meetings', []))->map(function ($meeting): mixed {
+            if (! is_array($meeting)) {
+                return $meeting;
+            }
             $weeks = $meeting['specific_weeks'] ?? null;
             if (is_string($weeks)) {
                 $weeks = preg_split('/[\s,，、]+/u', trim($weeks), -1, PREG_SPLIT_NO_EMPTY);
@@ -28,6 +32,12 @@ class StoreCourseRequest extends FormRequest
             }
 
             $meeting['specific_weeks'] = $weeks;
+            if (is_string($meeting['label'] ?? null)) {
+                $meeting['label'] = trim($meeting['label']);
+            }
+            if (isset($meeting['color']) && is_string($meeting['color'])) {
+                $meeting['color'] = strtolower($meeting['color']);
+            }
 
             return $meeting;
         })->all();
@@ -44,6 +54,8 @@ class StoreCourseRequest extends FormRequest
             'notes' => ['nullable', 'string', 'max:2000'],
             'meetings' => ['required', 'array', 'min:1', 'max:20'],
             'meetings.*.label' => ['nullable', 'string', 'max:40'],
+            'meetings.*.id' => ['nullable', 'integer', 'distinct', Rule::exists('course_meetings', 'id')->where('course_id', $this->route('course')?->id ?? 0)],
+            'meetings.*.color' => ['nullable', 'string', 'regex:/^#[0-9a-f]{6}$/i'],
             'meetings.*.teacher' => ['nullable', 'string', 'max:80'],
             'meetings.*.weekday' => ['required', 'integer', 'between:1,7'],
             'meetings.*.starts_at' => ['required', 'date_format:H:i'],
@@ -60,14 +72,26 @@ class StoreCourseRequest extends FormRequest
     public function after(): array
     {
         return [function (Validator $validator): void {
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
             $timetable = $this->route('timetable');
             if (! $timetable instanceof Timetable) {
                 return;
             }
 
             $fingerprints = [];
+            $colors = [];
             foreach ($this->input('meetings', []) as $index => $meeting) {
                 $path = "meetings.{$index}";
+                $typeKey = CourseColors::key($meeting['label'] ?? '');
+                $color = $meeting['color'] ?? null;
+                if ($color) {
+                    if (isset($colors[$typeKey]) && $colors[$typeKey] !== $color) {
+                        $validator->errors()->add("{$path}.color", '同一课程中，相同授课类型必须使用同一颜色。');
+                    }
+                    $colors[$typeKey] = $color;
+                }
                 if (($meeting['ends_at'] ?? '') <= ($meeting['starts_at'] ?? '')) {
                     $validator->errors()->add("{$path}.ends_at", '结束时间必须晚于开始时间。');
                 }
@@ -122,9 +146,22 @@ class StoreCourseRequest extends FormRequest
             $meeting['end_week'] = $specific ? null : (int) $meeting['end_week'];
             $meeting['specific_weeks'] = $specific ? $meeting['specific_weeks'] : null;
             $meeting['sort_order'] = $index;
+            unset($meeting['color']);
 
             return $meeting;
         })->all();
+    }
+
+    public function typeColors(): array
+    {
+        $colors = $this->route('course')?->type_colors ?? [];
+        foreach ($this->validated('meetings') as $meeting) {
+            if (! empty($meeting['color'])) {
+                $colors[CourseColors::key($meeting['label'] ?? '')] = $meeting['color'];
+            }
+        }
+
+        return $colors;
     }
 
     private function parityRangeIsEmpty(int $start, int $end, int $parity): bool

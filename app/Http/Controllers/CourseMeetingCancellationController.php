@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Course;
 use App\Models\CourseMeeting;
+use App\Models\CourseMeetingCancellation;
 use App\Models\Timetable;
+use App\Services\CourseCancellations;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class CourseMeetingCancellationController extends Controller
@@ -20,11 +23,11 @@ class CourseMeetingCancellationController extends Controller
     ): RedirectResponse {
         $this->authorizeMeeting($timetable, $course, $meeting);
         $weeks = $this->validatedWeeks($request, $timetable, $meeting, true);
+        $reason = $this->validatedReason($request);
 
-        DB::transaction(function () use ($meeting, $weeks): void {
-            foreach ($weeks as $week) {
-                $meeting->cancellations()->firstOrCreate(['week_number' => $week]);
-            }
+        DB::transaction(function () use ($course, $meeting, $weeks, $reason): void {
+            Course::query()->lockForUpdate()->findOrFail($course->id);
+            app(CourseCancellations::class)->cancel($meeting, $weeks, $reason);
         });
 
         return back()->with('status', count($weeks) === 1 ? '本次课程已取消。' : '所选课程已批量取消。');
@@ -39,11 +42,14 @@ class CourseMeetingCancellationController extends Controller
         $this->authorizeMeeting($timetable, $course, $meeting);
         $weeks = $this->validatedWeeks($request, $timetable, $meeting, false);
 
-        DB::transaction(function () use ($meeting, $weeks): void {
-            $meeting->cancellations()->delete();
-            $meeting->cancellations()->createMany(
-                array_map(fn (int $week): array => ['week_number' => $week], $weeks),
-            );
+        DB::transaction(function () use ($request, $course, $meeting, $weeks): void {
+            Course::query()->lockForUpdate()->findOrFail($course->id);
+            $existing = $meeting->cancellations()->pluck('week_number')->all();
+            $added = array_values(array_diff($weeks, $existing));
+            $reason = $added ? $this->validatedReason($request) : [];
+            $service = app(CourseCancellations::class);
+            $service->restore($meeting, array_values(array_diff($existing, $weeks)));
+            $service->cancel($meeting, $added, $reason);
         });
 
         return back()->with('status', $weeks === [] ? '已恢复该时间段的全部课程。' : '停课安排已更新。');
@@ -57,7 +63,10 @@ class CourseMeetingCancellationController extends Controller
     ): RedirectResponse {
         $this->authorizeMeeting($timetable, $course, $meeting);
         $weeks = $this->validatedWeeks($request, $timetable, $meeting, true);
-        $meeting->cancellations()->whereIn('week_number', $weeks)->delete();
+        DB::transaction(function () use ($course, $meeting, $weeks): void {
+            Course::query()->lockForUpdate()->findOrFail($course->id);
+            app(CourseCancellations::class)->restore($meeting, $weeks);
+        });
 
         return back()->with('status', count($weeks) === 1 ? '本次课程已恢复。' : '所选课程已恢复。');
     }
@@ -67,6 +76,14 @@ class CourseMeetingCancellationController extends Controller
         abort_unless($course->timetable_id === $timetable->id, 404);
         abort_unless($meeting->course_id === $course->id, 404);
         $this->authorize('update', $course);
+    }
+
+    private function validatedReason(Request $request): array
+    {
+        return $request->validate([
+            'reason' => ['required', Rule::in(array_keys(CourseMeetingCancellation::REASONS))],
+            'note' => ['nullable', 'string', 'max:1000', 'required_if:reason,other'],
+        ]);
     }
 
     /** @return list<int> */

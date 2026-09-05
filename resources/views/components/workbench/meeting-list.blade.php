@@ -11,6 +11,8 @@
             data-meeting-editor
             x-bind:data-meeting-index="index"
         >
+            <input type="hidden" x-bind:name="`meetings[${index}][id]`" x-bind:value="meeting.id || ''">
+            <input type="hidden" x-bind:name="`meetings[${index}][color]`" x-bind:value="meeting.color">
             <div class="meeting-editor__header">
                 <button
                     class="meeting-editor__toggle"
@@ -25,6 +27,7 @@
                             class="meeting-editor__chevron"
                             x-bind:class="{ 'meeting-editor__chevron--expanded': meeting._expanded }"
                         ></i>
+                        <span class="wb-meeting-color" x-bind:style="`background-color: ${meeting.color}`" aria-hidden="true"></span>
                         <span x-text="`时间段 ${index + 1}`"></span>
                     </span>
                     <span
@@ -48,26 +51,37 @@
             <div class="meeting-editor__body" x-cloak x-show="meeting._expanded">
                 <div class="wb-form-grid">
                     <label class="wb-field-group">
-                        <span class="wb-label">课堂标签</span>
+                        <span class="wb-label">授课类型</span>
                         <input
                             class="wb-field"
                             type="text"
                             x-bind:name="`meetings[${index}][label]`"
                             x-model="meeting.label"
-                            placeholder="例：理论课"
+                            x-on:input="adoptTypeColor('{{ $target }}', index)"
+                            list="meeting-types-{{ $target }}"
+                            maxlength="40"
+                            placeholder="例：Lecture / Tutorial"
                         >
                     </label>
 
                     <label class="wb-field-group">
                         <span class="wb-label">授课教师</span>
-                        <input
-                            class="wb-field"
-                            type="text"
-                            x-bind:name="`meetings[${index}][teacher]`"
-                            x-model="meeting.teacher"
-                            placeholder="教师姓名"
-                        >
+                        <input class="wb-field" type="text" x-bind:name="`meetings[${index}][teacher]`" x-model="meeting.teacher" placeholder="教师姓名">
                     </label>
+
+                    <div class="wb-field-group wb-field-group--full">
+                        <span class="wb-label" x-text="(meeting.label.trim() || '默认类型') + ' 颜色'"></span>
+                        <div class="wb-color-picker">
+                            <template x-for="color in colorPresets" x-bind:key="color">
+                                <button type="button" class="wb-color-swatch" x-bind:style="`--swatch: ${color}`" x-bind:aria-label="`选择颜色 ${color}`" x-bind:title="color" x-bind:aria-pressed="meeting.color === color" x-on:click="setTypeColor('{{ $target }}', index, color)"><i data-lucide="check" x-show="meeting.color === color"></i></button>
+                            </template>
+                            <label class="wb-custom-color" title="自定义颜色">
+                                <i data-lucide="palette"></i>
+                                <input type="color" x-bind:value="meeting.color" x-on:input="setTypeColor('{{ $target }}', index, $event.target.value)" aria-label="自定义课程颜色">
+                            </label>
+                            <span class="wb-color-value" x-text="meeting.color.toUpperCase()"></span>
+                        </div>
+                    </div>
 
                     <label class="wb-field-group">
                         <span class="wb-label">星期</span>
@@ -175,6 +189,8 @@
             </div>
         </section>
     </template>
+
+    <datalist id="meeting-types-{{ $target }}"><option value="Lecture"></option><option value="Tutorial"></option><option value="Lab"></option><option value="Seminar"></option></datalist>
 
     <button class="wb-btn w-full" type="button" x-on:click="addMeeting('{{ $target }}')">
         <i data-lucide="plus"></i>

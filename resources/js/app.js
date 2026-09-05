@@ -102,6 +102,8 @@ const blankMeeting = (weekCount = 18) => ({
     _key: `${Date.now()}-${Math.random()}`,
     _expanded: true,
     label: '',
+    id: null,
+    color: '#2f67c7',
     teacher: '',
     weekday: 1,
     starts_at: '08:00',
@@ -213,11 +215,15 @@ Alpine.data('timetableWorkbench', (config = {}) => ({
         meetings: [blankMeeting(Number(config.weekCount || 18))],
     },
     cancellationEditor: {
-        syncAction: '',
+        action: '',
+        mode: 'sync',
+        reason: '',
+        note: '',
         summary: '',
         weeks: [],
         options: [],
     },
+    colorPresets: ['#2f67c7', '#138a7b', '#7257cf', '#bd4f76', '#247ba0', '#c06135', '#558b2f', '#a16207'],
 
     init() {
         const syncBodyLock = () => {
@@ -234,7 +240,14 @@ Alpine.data('timetableWorkbench', (config = {}) => ({
         this.$nextTick(() => {
             refreshIcons();
 
-            if (config.initialModal) {
+            if (config.initialCourse) {
+                this.openCourse(config.initialCourse);
+                if (config.initialCancellation) {
+                    this.openCancellationManager(config.initialCancellation.mode);
+                    Object.assign(this.cancellationEditor, config.initialCancellation);
+                    this.cancellationEditor.weeks = this.cancellationEditor.weeks.map(String);
+                }
+            } else if (config.initialModal) {
                 this.openDialog(config.initialModal);
             }
         });
@@ -271,6 +284,20 @@ Alpine.data('timetableWorkbench', (config = {}) => ({
         return blankMeeting(this.weekCount);
     },
 
+    setTypeColor(target, index, color) {
+        const meetings = target === 'course' ? this.courseEditor.meetings : this.createMeetings;
+        const key = (meetings[index].label || '').trim().toLowerCase();
+        meetings.filter((meeting) => (meeting.label || '').trim().toLowerCase() === key)
+            .forEach((meeting) => { meeting.color = color; });
+    },
+
+    adoptTypeColor(target, index) {
+        const meetings = target === 'course' ? this.courseEditor.meetings : this.createMeetings;
+        const key = (meetings[index].label || '').trim().toLowerCase();
+        const sibling = meetings.find((meeting, i) => i !== index && (meeting.label || '').trim().toLowerCase() === key);
+        if (sibling) meetings[index].color = sibling.color;
+    },
+
     addMeeting(target = 'create') {
         const meetings = target === 'course'
             ? this.courseEditor.meetings
@@ -285,6 +312,7 @@ Alpine.data('timetableWorkbench', (config = {}) => ({
         } else {
             this.createMeetings.push(this.newMeeting());
         }
+        this.adoptTypeColor(target, meetings.length - 1);
 
         this.$nextTick(() => {
             refreshIcons();
@@ -346,6 +374,7 @@ Alpine.data('timetableWorkbench', (config = {}) => ({
         }[meeting.week_mode] || '';
 
         return [
+            meeting.label,
             weekday,
             `${meeting.starts_at || '--:--'}–${meeting.ends_at || '--:--'}`,
             meeting.location,
@@ -358,6 +387,7 @@ Alpine.data('timetableWorkbench', (config = {}) => ({
         const expandSingleMeeting = meetings.length === 1;
 
         this.courseEditor = {
+            id: payload.id,
             action: payload.action,
             destroyAction: payload.destroyAction,
             archiveAction: payload.archiveAction,
@@ -375,18 +405,26 @@ Alpine.data('timetableWorkbench', (config = {}) => ({
         this.openDialog('course-editor');
     },
 
-    openCancellationManager() {
+    openCancellationManager(mode = 'sync') {
         const occurrence = this.courseEditor.occurrence;
 
         if (!occurrence) return;
 
         this.cancellationEditor = {
-            syncAction: occurrence.syncAction,
+            mode,
+            action: mode === 'single' ? occurrence.cancelAction : occurrence.syncAction,
+            reason: '',
+            note: '',
             summary: occurrence.summary,
-            weeks: [...(occurrence.canceledWeeks || [])].map(String),
+            weeks: mode === 'single' ? [String(occurrence.week)] : [...(occurrence.canceledWeeks || [])].map(String),
             options: occurrence.occurringWeeks || [],
         };
         this.openDialog('occurrence-cancellations');
+    },
+
+    hasNewCancellations() {
+        const existing = this.courseEditor.occurrence?.canceledWeeks || [];
+        return this.cancellationEditor.weeks.some((week) => !existing.includes(String(week)));
     },
 
     prepareExport() {

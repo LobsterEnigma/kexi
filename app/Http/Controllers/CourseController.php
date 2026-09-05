@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreCourseRequest;
 use App\Models\Course;
 use App\Models\Timetable;
+use App\Services\CourseCancellations;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +20,7 @@ class CourseController extends Controller
         DB::transaction(function () use ($request, $timetable, $courseData): void {
             $course = $timetable->courses()->create([
                 ...$courseData,
+                'type_colors' => $request->typeColors(),
                 'sort_order' => (int) $timetable->courses()->max('sort_order') + 1,
             ]);
             $course->meetings()->createMany($request->normalizedMeetings());
@@ -42,9 +44,24 @@ class CourseController extends Controller
         $courseData = $request->safe()->only(['name', 'code', 'notes']);
 
         DB::transaction(function () use ($request, $course, $courseData): void {
-            $course->update($courseData);
-            $course->meetings()->delete();
-            $course->meetings()->createMany($request->normalizedMeetings());
+            $course = Course::query()->lockForUpdate()->findOrFail($course->id);
+            $course->update([...$courseData, 'type_colors' => $request->typeColors()]);
+            $kept = [];
+            foreach ($request->normalizedMeetings() as $data) {
+                $id = $data['id'] ?? null;
+                unset($data['id']);
+                if ($id) {
+                    $meeting = $course->meetings()->findOrFail($id);
+                    $meeting->update($data);
+                } else {
+                    $meeting = $course->meetings()->create($data);
+                }
+                $kept[] = $meeting->id;
+            }
+            foreach ($course->meetings()->whereNotIn('id', $kept)->get() as $meeting) {
+                app(CourseCancellations::class)->restore($meeting, $meeting->cancellations()->pluck('week_number')->all(), 'removed');
+                $meeting->delete();
+            }
         });
 
         return back()->with('status', '课程已更新。');
@@ -54,7 +71,13 @@ class CourseController extends Controller
     {
         abort_unless($course->timetable_id === $timetable->id, 404);
         $this->authorize('delete', $course);
-        $course->delete();
+        DB::transaction(function () use ($course): void {
+            $course = Course::query()->lockForUpdate()->findOrFail($course->id);
+            foreach ($course->meetings as $meeting) {
+                app(CourseCancellations::class)->restore($meeting, $meeting->cancellations()->pluck('week_number')->all(), 'removed');
+            }
+            $course->delete();
+        });
 
         return back()->with('status', '课程已删除。');
     }

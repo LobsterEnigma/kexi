@@ -907,6 +907,19 @@
         --course-text: #7f3c20;
     }
 
+    .course-event[style*="--custom-accent"]:not(.course-event--canceled),
+    .month-event[style*="--custom-accent"]:not(.month-event--canceled) {
+        --course-accent: var(--custom-accent);
+        --course-border: var(--custom-border);
+        --course-surface: var(--custom-surface);
+        --course-text: var(--custom-text);
+    }
+
+    .course-event--conflict[style*="--custom-accent"] {
+        outline: 2px solid #d92d20;
+        outline-offset: -1px;
+    }
+
     .course-event:hover {
         z-index: 8;
         transform: translateY(-1px);
@@ -956,6 +969,43 @@
 
     .course-event--canceled .course-event__title {
         text-decoration: line-through;
+    }
+
+    .wb-color-picker { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+    .wb-meeting-color { width: 9px; height: 9px; flex: 0 0 9px; border-radius: 50%; }
+    .wb-color-swatch { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--swatch); color: white; border: 2px solid white; box-shadow: 0 0 0 1px #d7dfe7; }
+    .wb-color-swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px #344054; }
+    .wb-color-swatch svg { width: 16px; height: 16px; }
+    .wb-custom-color { position: relative; display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid #cfd7e1; border-radius: 6px; cursor: pointer; }
+    .wb-custom-color svg { width: 18px; height: 18px; }
+    .wb-custom-color input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+    .wb-color-value { color: #667085; font-size: 12px; font-variant-numeric: tabular-nums; }
+    .wb-occurrence-reason { margin-top: 6px; font-size: 12px; line-height: 18px; color: #667085; overflow-wrap: anywhere; white-space: pre-wrap; }
+    .wb-records-page { height: 100dvh; overflow-y: auto; background: #fff; }
+    .wb-records-header { display: flex; align-items: center; flex-wrap: wrap; gap: 20px; border-bottom: 1px solid #e4e7ec; padding: 24px max(20px, calc((100% - 1120px) / 2)); }
+    .wb-records-header h1 { font-size: 22px; font-weight: 700; }
+    .wb-records-header p { margin-top: 4px; color: #667085; font-size: 13px; }
+    .wb-records-header > label { margin-left: auto; max-width: 320px; min-width: 180px; }
+    .wb-records-main { max-width: 1160px; margin: auto; padding: 24px 20px 40px; }
+    .wb-records-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: 16px; padding-bottom: 24px; border-bottom: 1px solid #e4e7ec; }
+    .wb-records-count { margin: 20px 0 10px; color: #667085; font-size: 13px; }
+    .wb-record { display: grid; grid-template-columns: 200px minmax(0, 1fr) 155px; gap: 24px; padding: 22px 0; border-bottom: 1px solid #edf0f3; }
+    .wb-record h2 { font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+    .wb-record p, .wb-record-date span, .wb-record-status time { display: block; margin-top: 5px; font-size: 12px; color: #667085; overflow-wrap: anywhere; }
+    .wb-record-date strong { font-size: 14px; font-variant-numeric: tabular-nums; }
+    .wb-record-reason { margin-top: 10px; font-size: 13px; color: #344054; }
+    .wb-record .wb-record-note { white-space: pre-wrap; line-height: 1.7; }
+    .wb-record-status { text-align: right; font-size: 13px; color: #a74336; }
+    .wb-record[data-record-action="restored"] .wb-record-status { color: #187c46; }
+    .wb-record[data-record-action="removed"] .wb-record-status { color: #667085; }
+    .wb-records-empty { padding: 60px 0; text-align: center; color: #667085; }
+    .wb-records-empty svg { width: 32px; height: 32px; margin: 0 auto 12px; }
+    @media (max-width: 640px) {
+        .wb-records-header { gap: 16px; padding: 20px; }
+        .wb-records-header > label { margin-left: 0; max-width: none; width: 100%; }
+        .wb-records-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .wb-record { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+        .wb-record-status { text-align: left; }
     }
 
     .course-event__title {
@@ -2246,7 +2296,8 @@
         padding: 0 10px;
     }
 
-    .wb-tab--diagnostics {
+    .wb-tab--diagnostics,
+    .wb-tab--records {
         display: none;
     }
 

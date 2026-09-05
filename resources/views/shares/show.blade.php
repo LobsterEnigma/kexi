@@ -145,7 +145,7 @@
                                     <article
                                         class="course-event course-event--{{ $status }} {{ $compactClass }}"
                                         data-course-tone="{{ (int) $course->getKey() % 6 }}"
-                                        style="--event-top: {{ $top }}px; --event-height: {{ $height }}px; --lane: {{ $lane }}; --lane-count: {{ $laneCount }}"
+                                        style="--event-top: {{ $top }}px; --event-height: {{ $height }}px; --lane: {{ $lane }}; --lane-count: {{ $laneCount }}; {{ $meeting->colorStyle() }}"
                                         aria-label="{{ $course->name }}，{{ $weekdayLabel }} {{ $startsAt }} 至 {{ $endsAt }}，{{ $statusText }}"
                                     >
                                         <span class="course-event__signal" title="{{ $statusText }}" aria-hidden="true">

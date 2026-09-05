@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CourseCancellationRecordController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\CourseMeetingCancellationController;
 use App\Http\Controllers\ProfileController;
@@ -26,6 +27,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/timetables', [TimetableController::class, 'index'])->name('timetables.index');
     Route::post('/timetables', [TimetableController::class, 'store'])->name('timetables.store');
     Route::get('/timetables/{timetable}', [TimetableController::class, 'show'])->name('timetables.show');
+    Route::get('/timetables/{timetable}/cancellation-records', [CourseCancellationRecordController::class, 'index'])->name('timetables.cancellation-records');
     Route::patch('/timetables/{timetable}', [TimetableController::class, 'update'])->name('timetables.update');
     Route::delete('/timetables/{timetable}', [TimetableController::class, 'destroy'])->name('timetables.destroy');
 

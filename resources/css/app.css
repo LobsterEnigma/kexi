@@ -1074,7 +1074,7 @@
     }
 
     .course-event--compact {
-        padding: 5px 7px 5px 8px;
+        padding: 2px 7px 2px 8px;
     }
 
     .course-event--compact .course-event__title,
@@ -1087,12 +1087,14 @@
 
     .course-event--compact .course-event__title {
         padding-right: 20px;
-        line-height: 18px;
+        line-height: 16px;
     }
 
     .course-event--compact .course-event__meta {
         margin-top: 0;
-        line-height: 16px;
+        font-size: 12px;
+        line-height: 14px;
+        flex-shrink: 0;
     }
 
     .course-event--compact .course-event__signal,
@@ -1100,7 +1102,6 @@
         display: inline-flex;
     }
 
-    .course-event--compact .course-event__meta--secondary,
     .course-event--compact .course-event__status {
         display: none;
     }
@@ -1111,6 +1112,7 @@
 
     .course-event--medium .course-event__title {
         padding-right: 20px;
+        -webkit-line-clamp: 2;
     }
 
     .course-event--medium .course-event__meta--primary {
@@ -1122,7 +1124,6 @@
         display: inline-flex;
     }
 
-    .course-event--medium .course-event__meta--secondary,
     .course-event--medium .course-event__status {
         display: none;
     }
@@ -1138,7 +1139,7 @@
         line-height: 16px;
     }
 
-    .course-event--micro .course-event__meta,
+    .course-event.course-event--micro .course-event__meta,
     .course-event--micro .course-event__status {
         display: none;
     }

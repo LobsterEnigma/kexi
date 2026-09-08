@@ -136,7 +136,7 @@
                                         $gap = data_get($item, 'nearest_gap');
                                         $startsAt = substr((string) $meeting->starts_at, 0, 5);
                                         $endsAt = substr((string) $meeting->ends_at, 0, 5);
-                                        $compactClass = $height < 48 ? 'course-event--micro' : ($height < 104 ? 'course-event--compact' : '');
+                                        $compactClass = $height < 50 ? 'course-event--micro' : ($height < 104 ? 'course-event--compact' : ($height < 132 ? 'course-event--medium' : ''));
                                         $statusText = $status === 'near' && is_numeric($gap)
                                             ? '间隔 '.(int) $gap.' 分钟'
                                             : ($statusLabels[$status] ?? $statusLabels['slack_deep']);
@@ -146,15 +146,17 @@
                                         class="course-event course-event--{{ $status }} {{ $compactClass }}"
                                         data-course-tone="{{ (int) $course->getKey() % 6 }}"
                                         style="--event-top: {{ $top }}px; --event-height: {{ $height }}px; --lane: {{ $lane }}; --lane-count: {{ $laneCount }}; {{ $meeting->colorStyle() }}"
-                                        aria-label="{{ $course->name }}，{{ $weekdayLabel }} {{ $startsAt }} 至 {{ $endsAt }}，{{ $statusText }}"
+                                        title="{{ implode(' · ', array_filter([(string) $course->name, (string) $course->code, $startsAt.'–'.$endsAt, (string) $meeting->location])) }}"
+                                        tabindex="0"
+                                        aria-label="{{ $course->name }}，{{ $weekdayLabel }} {{ $startsAt }} 至 {{ $endsAt }}{{ $meeting->location ? '，地点：'.$meeting->location : '' }}，{{ $statusText }}"
                                     >
                                         <span class="course-event__signal" title="{{ $statusText }}" aria-hidden="true">
                                             <i data-lucide="{{ $statusIcons[$status] ?? 'circle-check-big' }}"></i>
                                         </span>
-                                        <span class="course-event__title">{{ $course->name }}</span>
+                                        <span class="course-event__title">{{ $height < 104 && filled($course->code) ? $course->code : $course->name }}</span>
                                         <span class="course-event__meta">{{ $startsAt }}–{{ $endsAt }}</span>
                                         @if ($meeting->location || $meeting->teacher)
-                                            <span class="course-event__meta course-event__meta--secondary">{{ $meeting->location ?: $meeting->teacher }}</span>
+                                            <span class="course-event__meta course-event__meta--secondary" title="{{ $meeting->location ?: $meeting->teacher }}">{{ $meeting->location ?: $meeting->teacher }}</span>
                                         @endif
                                         <span class="course-event__status">
                                             <i data-lucide="{{ $statusIcons[$status] ?? 'circle-check-big' }}"></i>

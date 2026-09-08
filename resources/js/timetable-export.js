@@ -246,14 +246,17 @@ const drawWeekEvent = (ctx, item, geometry) => {
     const paddingX = 22;
     const textX = x + paddingX;
     const textWidth = Math.max(20, width - paddingX * 2);
-    const compact = height < 76;
+    const compact = height < 118;
+    const dense = height < 76;
     const title = compact && item.code ? item.code : item.name;
 
     ctx.fillStyle = appearance.text;
     ctx.textBaseline = 'top';
-    setFont(ctx, compact ? 22 : 25, 800);
-    const titleLines = wrapText(ctx, title, textWidth - (appearance.label ? 80 : 0), compact ? 1 : 2);
-    titleLines.forEach((line, index) => ctx.fillText(line, textX, y + 15 + index * 31));
+    setFont(ctx, dense ? 18 : compact ? 22 : 25, 800);
+    const showLocation = height >= 56 && Boolean(item.location || item.teacher);
+    const titleLines = wrapText(ctx, title, textWidth - (appearance.label ? 80 : 0), height < 154 ? 1 : 2);
+    const textTop = dense ? 4 : compact ? 7 : 15;
+    titleLines.forEach((line, index) => ctx.fillText(line, textX, y + textTop + index * 31));
 
     if (appearance.label && width > 150) {
         setFont(ctx, 15, 700);
@@ -264,18 +267,19 @@ const drawWeekEvent = (ctx, item, geometry) => {
         ctx.fillText(appearance.label, x + width - badgeWidth - 2, y + 26);
     }
 
-    if (height >= 62) {
+    if (height >= 48) {
         ctx.fillStyle = appearance.text;
         ctx.globalAlpha = 0.78;
-        setFont(ctx, 18, 600);
+        setFont(ctx, dense ? 14 : compact ? 16 : 18, 600);
         ctx.textBaseline = 'bottom';
-        ctx.fillText(fitText(ctx, item.time, textWidth), textX, y + height - 13);
+        ctx.fillText(fitText(ctx, item.time, textWidth), textX, y + height - (showLocation ? (dense ? 20 : compact ? 24 : 35) : 7));
     }
 
-    if (height >= 118 && (item.location || item.teacher)) {
+    if (showLocation) {
         ctx.globalAlpha = 0.68;
-        setFont(ctx, 17, 500);
-        ctx.fillText(fitText(ctx, item.location || item.teacher, textWidth), textX, y + height - 39);
+        setFont(ctx, dense ? 13 : compact ? 15 : 17, 500);
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(fitText(ctx, item.location || item.teacher, textWidth), textX, y + height - (compact ? 5 : 12));
     }
 
     ctx.restore();

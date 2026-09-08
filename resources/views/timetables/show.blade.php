@@ -684,7 +684,7 @@
                                         $courseCode = trim((string) $course->code);
                                         $usesCodeAsTitle = $height < 104 && $courseCode !== '';
                                         $nameModeMeta = implode(' · ', array_filter([$courseCode, $startsAt.'–'.$endsAt]));
-                                        $compactClass = $height < 48
+                                        $compactClass = $height < 50
                                             ? 'course-event--micro'
                                             : ($height < 104 ? 'course-event--compact' : ($height < 132 ? 'course-event--medium' : ''));
                                         $coursePayload = $buildCoursePayload($course, $meeting, $weekNumber);
@@ -697,7 +697,7 @@
                                         type="button"
                                         x-on:click="openCourse({{ Illuminate\Support\Js::from($coursePayload) }})"
                                         title="{{ implode(' · ', array_filter([(string) $course->name, $courseCode, $startsAt.'–'.$endsAt, (string) $meeting->location])) }}"
-                                        aria-label="编辑 {{ $course->name }}，{{ $weekdayLabel }} {{ $startsAt }} 至 {{ $endsAt }}，{{ $statusLabels($status, $gap) }}"
+                                        aria-label="编辑 {{ $course->name }}，{{ $weekdayLabel }} {{ $startsAt }} 至 {{ $endsAt }}{{ $meeting->location ? '，地点：'.$meeting->location : '' }}，{{ $statusLabels($status, $gap) }}"
                                     >
                                         <span class="course-event__signal" title="{{ $statusLabels($status, $gap) }}" aria-hidden="true">
                                             <i data-lucide="{{ $statusIcons[$status] ?? 'circle-check-big' }}"></i>
@@ -711,7 +711,7 @@
                                             <span class="course-event__meta course-event__meta--primary course-event__meta--code-mode">{{ $startsAt }}–{{ $endsAt }}</span>
                                         @endif
                                         @if ($meeting->location || $meeting->teacher)
-                                            <span class="course-event__meta course-event__meta--secondary">
+                                            <span class="course-event__meta course-event__meta--secondary" title="{{ $meeting->location ?: $meeting->teacher }}">
                                                 {{ $meeting->location ?: $meeting->teacher }}
                                             </span>
                                         @endif

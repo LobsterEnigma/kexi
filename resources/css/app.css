@@ -981,31 +981,102 @@
     .wb-custom-color input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
     .wb-color-value { color: #667085; font-size: 12px; font-variant-numeric: tabular-nums; }
     .wb-occurrence-reason { margin-top: 6px; font-size: 12px; line-height: 18px; color: #667085; overflow-wrap: anywhere; white-space: pre-wrap; }
-    .wb-records-page { height: 100dvh; overflow-y: auto; background: #fff; }
-    .wb-records-header { display: flex; align-items: center; flex-wrap: wrap; gap: 20px; border-bottom: 1px solid #e4e7ec; padding: 24px max(20px, calc((100% - 1120px) / 2)); }
-    .wb-records-header h1 { font-size: 22px; font-weight: 700; }
-    .wb-records-header p { margin-top: 4px; color: #667085; font-size: 13px; }
-    .wb-records-header > label { margin-left: auto; max-width: 320px; min-width: 180px; }
-    .wb-records-main { max-width: 1160px; margin: auto; padding: 24px 20px 40px; }
-    .wb-records-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: 16px; padding-bottom: 24px; border-bottom: 1px solid #e4e7ec; }
-    .wb-records-count { margin: 20px 0 10px; color: #667085; font-size: 13px; }
-    .wb-record { display: grid; grid-template-columns: 200px minmax(0, 1fr) 155px; gap: 24px; padding: 22px 0; border-bottom: 1px solid #edf0f3; }
-    .wb-record h2 { font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
-    .wb-record p, .wb-record-date span, .wb-record-status time { display: block; margin-top: 5px; font-size: 12px; color: #667085; overflow-wrap: anywhere; }
-    .wb-record-date strong { font-size: 14px; font-variant-numeric: tabular-nums; }
-    .wb-record-reason { margin-top: 10px; font-size: 13px; color: #344054; }
-    .wb-record .wb-record-note { white-space: pre-wrap; line-height: 1.7; }
-    .wb-record-status { text-align: right; font-size: 13px; color: #a74336; }
-    .wb-record[data-record-action="restored"] .wb-record-status { color: #187c46; }
-    .wb-record[data-record-action="removed"] .wb-record-status { color: #667085; }
-    .wb-records-empty { padding: 60px 0; text-align: center; color: #667085; }
-    .wb-records-empty svg { width: 32px; height: 32px; margin: 0 auto 12px; }
-    @media (max-width: 640px) {
-        .wb-records-header { gap: 16px; padding: 20px; }
-        .wb-records-header > label { margin-left: 0; max-width: none; width: 100%; }
-        .wb-records-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        .wb-record { grid-template-columns: minmax(0, 1fr); gap: 10px; }
-        .wb-record-status { text-align: left; }
+    .wb-records-page {
+        height: 100dvh;
+        overflow-y: auto;
+        background: #f5f7fb;
+        scrollbar-gutter: stable;
+    }
+    .wb-records-topbar { border-bottom: 1px solid var(--wb-line); background: #fff; }
+    .wb-records-topbar__inner { max-width: 1200px; min-height: 76px; margin: auto; padding: 16px 28px; display: flex; align-items: center; gap: 30px; }
+    .wb-records-topbar__inner > .wb-btn { margin-left: auto; }
+    .wb-records-brand { display: flex; align-items: center; gap: 10px; font-size: 23px; font-weight: 700; white-space: nowrap; }
+    .wb-records-brand .wb-brand__mark { width: 30px; height: 30px; }
+    .wb-records-breadcrumb { display: flex; align-items: center; gap: 12px; color: #344054; font-size: 13px; }
+    .wb-records-breadcrumb > span { color: #74808c; }
+    .wb-records-breadcrumb svg { width: 14px; height: 14px; color: #98a2b3; }
+    .wb-records-main { max-width: 1200px; margin: auto; padding: 38px 28px 40px; }
+    .wb-records-header { display: flex; align-items: center; justify-content: space-between; gap: 32px; margin-bottom: 26px; }
+    .wb-records-header > div { min-width: 0; }
+    .wb-records-header h1 { font-size: 25px; font-weight: 700; line-height: 1.5; letter-spacing: -.5px; }
+    .wb-records-header p { margin-top: 7px; color: #667085; font-size: 13px; overflow-wrap: anywhere; }
+    .wb-records-term { width: 310px; flex-shrink: 0; }
+    .wb-records-term .wb-label { color: #667085; font-size: 12px; }
+    .wb-records-panel { overflow: hidden; border: 1px solid #dfe5ed; border-radius: 8px; background: #fff; box-shadow: 0 4px 20px rgb(15 23 42 / 3%); }
+    .wb-records-toolbar { min-height: 64px; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 1px solid #e9edf3; }
+    .wb-records-tabs { display: flex; gap: 24px; min-width: 0; overflow-x: auto; }
+    .wb-records-tab { display: inline-flex; align-items: center; min-height: 64px; border-bottom: 2px solid transparent; white-space: nowrap; color: #667085; font-size: 13px; font-weight: 500; }
+    .wb-records-tab:hover { color: var(--wb-primary); }
+    .wb-records-tab[aria-current="page"] { color: var(--wb-primary); border-bottom-color: var(--wb-primary); font-weight: 600; }
+    .wb-records-count { white-space: nowrap; color: #74808c; font-size: 12px; }
+    .wb-records-count strong { font-weight: 600; color: #344054; }
+    .wb-records-filter-panel { background: #fbfcfe; border-bottom: 1px solid #e9edf3; }
+    .wb-records-filter-panel summary { list-style: none; display: flex; align-items: center; justify-content: space-between; min-height: 48px; padding: 10px 24px; cursor: pointer; color: #526174; font-size: 12px; }
+    .wb-records-filter-panel summary::-webkit-details-marker { display: none; }
+    .wb-records-filter-panel summary > span { display: flex; align-items: center; gap: 8px; }
+    .wb-records-filter-panel summary svg { width: 14px; height: 14px; }
+    .wb-records-filter-panel summary b { display: inline-grid; place-items: center; min-width: 18px; height: 18px; border-radius: 4px; background: #e9f0ff; color: var(--wb-primary); font-size: 11px; }
+    .wb-records-filter-panel .when-open, .wb-records-filter-panel[open] .when-closed { display: none; }
+    .wb-records-filter-panel[open] .when-open { display: inline; }
+    .wb-records-filter-panel[open] .wb-records-filter-toggle svg { transform: rotate(180deg); }
+    .wb-records-filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: end; gap: 16px; padding: 4px 24px 20px; }
+    .wb-records-filters .wb-label { font-size: 12px; color: #667085; }
+    .wb-records-filter-actions { display: flex; gap: 8px; grid-column: 1 / -1; justify-content: flex-end; }
+    .wb-record { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 24px; padding: 26px; border-bottom: 1px solid #e9edf3; }
+    .wb-record:last-child { border-bottom: 0; }
+    .wb-record-date { display: flex; flex-direction: column; align-items: center; justify-content: center; align-self: start; min-height: 94px; border: 1px solid #e0e7f0; border-radius: 8px; background: #f7f9fd; font-variant-numeric: tabular-nums; }
+    .wb-record-date > span { color: #667085; font-size: 10px; }
+    .wb-record-date strong { color: #263f64; font-size: 29px; line-height: 38px; font-weight: 600; }
+    .wb-record-date small { color: #74808c; font-size: 11px; }
+    .wb-record-content { min-width: 0; }
+    .wb-record-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+    .wb-record-heading h2 { font-size: 16px; font-weight: 600; line-height: 24px; overflow-wrap: anywhere; }
+    .wb-record-badge { display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; padding: 4px 8px; background: #fff4ee; border: 1px solid #f5ddce; border-radius: 5px; color: #a04b20; font-size: 11px; white-space: nowrap; }
+    .wb-record-badge svg { width: 12px; height: 12px; }
+    .wb-record[data-record-action="restored"] .wb-record-badge { background: #eef8f2; border-color: #d3eadd; color: #28714b; }
+    .wb-record[data-record-action="removed"] .wb-record-badge { background: #f3f4f6; border-color: #e2e5e9; color: #667085; }
+    .wb-record-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; margin-top: 5px; font-size: 12px; color: #74808c; }
+    .wb-record-meta span { display: inline-flex; align-items: center; gap: 4px; overflow-wrap: anywhere; }
+    .wb-record-meta svg { width: 12px; height: 12px; }
+    .wb-record-detail { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px 12px; margin-top: 14px; }
+    .wb-record-reason { display: inline-block; padding: 3px 8px; border-radius: 4px; background: #f1f4f8; font-size: 11px; color: #526174; }
+    .wb-record-note { flex: 1 1 180px; font-size: 13px; color: #475467; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; }
+    .wb-record-timestamp { display: block; margin-top: 12px; color: #74808c; font-size: 11px; }
+    .wb-records-empty { display: flex; flex-direction: column; align-items: center; padding: 70px 24px 80px; text-align: center; }
+    .wb-records-empty__symbol { position: relative; display: grid; place-items: center; width: 86px; height: 86px; margin-bottom: 26px; border: 1px solid #dce6f7; border-radius: 8px; background: #f0f5ff; color: #7396ce; }
+    .wb-records-empty__symbol > svg { width: 40px; height: 40px; stroke-width: 1.4; }
+    .wb-records-empty__symbol > span { position: absolute; right: -8px; bottom: -7px; display: grid; place-items: center; width: 29px; height: 29px; border: 3px solid white; border-radius: 50%; background: #3d73cc; color: white; }
+    .wb-records-empty__symbol > span svg { width: 14px; height: 14px; }
+    .wb-records-empty h2 { font-size: 18px; font-weight: 600; color: #344054; }
+    .wb-records-empty p { max-width: 360px; margin: 10px 0 24px; font-size: 13px; color: #74808c; line-height: 1.8; }
+    .wb-records-pagination { padding: 20px 24px; border-top: 1px solid #e9edf3; }
+    .wb-records-privacy { display: flex; align-items: flex-start; justify-content: center; gap: 6px; margin-top: 20px; color: #74808c; font-size: 11px; line-height: 18px; }
+    .wb-records-privacy svg { width: 13px; height: 13px; flex-shrink: 0; margin-top: 2px; }
+    @media (max-width: 767px) {
+        .wb-records-topbar__inner { min-height: 68px; padding: 14px 18px; }
+        .wb-records-breadcrumb { display: none; }
+        .wb-records-main { padding: 24px 16px; }
+        .wb-records-header { align-items: stretch; flex-direction: column; gap: 18px; margin-bottom: 20px; }
+        .wb-records-header h1 { font-size: 22px; }
+        .wb-records-term { width: 100%; }
+        .wb-records-toolbar { padding: 0 16px; flex-wrap: wrap; gap: 0; }
+        .wb-records-tabs { width: 100%; gap: 20px; }
+        .wb-records-tab { min-height: 54px; font-size: 12px; }
+        .wb-records-count { padding: 8px 0; }
+        .wb-records-filter-panel summary { padding: 10px 16px; }
+        .wb-records-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 4px 16px 16px; gap: 12px; }
+        .wb-record { grid-template-columns: 54px minmax(0, 1fr); gap: 14px; padding: 20px 16px; }
+        .wb-record-date { min-height: 80px; }
+        .wb-record-date strong { font-size: 25px; line-height: 32px; }
+        .wb-record-date > span { font-size: 9px; }
+        .wb-record-heading { flex-direction: column; gap: 8px; }
+        .wb-record-heading h2 { font-size: 15px; }
+        .wb-record-meta { gap: 5px 8px; }
+        .wb-records-empty { padding: 48px 20px 52px; }
+        .wb-records-empty h2 { font-size: 16px; }
+    }
+    @media (max-width: 380px) {
+        .wb-records-filters .wb-field-group:has(input[type="date"]) { grid-column: 1 / -1; }
     }
 
     .course-event__title {

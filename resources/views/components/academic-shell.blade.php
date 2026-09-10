@@ -27,7 +27,7 @@
                 </section>
             @endif
             {{ $slot }}
-            <p class="wb-records-privacy"><i data-lucide="eye-off"></i>学业任务与学习安排仅自己可见。时间均按 {{ $timetable->timezone }} 显示。</p>
+            <p class="wb-records-privacy"><i data-lucide="eye-off"></i>{{ request()->routeIs('personal-events.*')?'个人安排默认私密；公开分享与图片导出由你主动选择。':'学业任务与学习安排仅自己可见。' }}时间按 {{ $timetable->timezone }} 显示。</p>
         </div>
         </div>
         <div class="wb-drawer-backdrop" x-cloak x-show="sidebarOpen" x-on:click="closeSidebar()" x-transition.opacity></div>

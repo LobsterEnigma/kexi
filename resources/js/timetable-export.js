@@ -298,7 +298,7 @@ const drawWeekExport = (canvas, data, theme) => {
     const dayWidth = (gridWidth - timeWidth) / 7;
     const contentY = gridY + dayHeaderHeight;
     const contentHeight = gridHeight - dayHeaderHeight;
-    const dayStart = Number(data.dayStart || 480);
+    const dayStart = Number(data.dayStart ?? 480);
     const dayEnd = Math.max(dayStart + 60, Number(data.dayEnd || 1320));
     const minuteScale = contentHeight / (dayEnd - dayStart);
     const ctx = canvas.getContext('2d');
@@ -510,17 +510,51 @@ const drawMonthExport = (canvas, data, theme) => {
     drawFooter(ctx, data, theme, width, height, margin);
 };
 
-export const renderTimetableExport = async (canvas, data, themeKey = 'ocean') => {
+const withPersonalEvents = (data) => {
+    const personal = data.personal || [];
+    const appearance = (event) => ({ accent: event.color, border: event.color, surface: '#f1f8f6', text: '#254a42' });
+    const item = (event) => ({ ...event, code: '', teacher: '', status: 'normal', appearance: appearance(event) });
+    if (data.view === 'month') return { ...data, cells: data.cells.map((cell) => ({ ...cell, events: [...cell.events, ...personal.filter(e => e.date === cell.date).map(item)] })) };
+    const items = [...data.items.map(i => ({ ...i })), ...personal.filter(e => !e.allDay).map(item)];
+    for (let day = 1; day <= 7; day++) {
+        const sorted = items.filter(e => e.weekday === day).sort((a,b) => a.startMinute-b.startMinute || a.endMinute-b.endMinute);
+        let cluster = [], end = 0;
+        const flush = () => { const lanes = []; for (const event of cluster) { let lane = lanes.findIndex(t => t <= event.startMinute); if (lane < 0) lane = lanes.length; lanes[lane] = event.endMinute; event.lane = lane; } for (const event of cluster) event.laneCount = lanes.length; cluster = []; };
+        for (const event of sorted) { if (cluster.length && event.startMinute >= end) flush(); cluster.push(event); end = Math.max(end, event.endMinute); } flush();
+    }
+    return { ...data, items, dayStart: Math.min(data.dayStart, ...items.map(e => Math.floor(e.startMinute/60)*60)), dayEnd: Math.max(data.dayEnd, ...items.map(e => Math.ceil(e.endMinute/60)*60)) };
+};
+
+// Full, wrapping activity details complement compact calendar cells, including all-day events.
+const appendPersonalDetails = (canvas, data, theme) => {
+    const events = data.personal || [];
+    if (!events.length) return;
+    const snapshot = document.createElement('canvas'); snapshot.width = canvas.width; snapshot.height = canvas.height; snapshot.getContext('2d').drawImage(canvas,0,0);
+    const ctx = canvas.getContext('2d'); const width = canvas.width, margin = 84, columnWidth = (width-margin*2-28)/2;
+    const fullLines = (text, maxWidth) => { const lines = []; let line = ''; for (const char of String(text || '')) { if (char === '\n' || (line && ctx.measureText(line+char).width > maxWidth)) { lines.push(line); line = char === '\n' ? '' : char; } else line += char; } if (line) lines.push(line); return lines; };
+    setFont(ctx,24,600);
+    const entries = events.map(e => ({ ...e, lines: fullLines(e.name,columnWidth-48), meta: fullLines([e.date,e.time,e.category,e.location].filter(Boolean).join(' · '),columnWidth-48) }));
+    const heights = []; for(let i=0;i<entries.length;i+=2) heights.push(Math.max(...entries.slice(i,i+2).map(e=>64+e.lines.length*34+e.meta.length*30)));
+    const extra = 140 + heights.reduce((sum,h)=>sum+h+20,0);
+    if (canvas.height+extra>16000) throw new Error('当前活动明细过多，图片会超出尺寸限制。请改为按周导出，或关闭个人安排后导出课程。');
+    canvas.height += extra; ctx.fillStyle=theme.background;ctx.fillRect(0,0,width,canvas.height);ctx.drawImage(snapshot,0,0);
+    let y=snapshot.height+30;setFont(ctx,32,700);ctx.fillStyle=theme.header;ctx.fillText('个人安排 · '+events.length+' 项（不含私人备注）',margin,y);y+=40;
+    entries.forEach((event,index)=>{const x=margin+(index%2)*(columnWidth+28),h=heights[Math.floor(index/2)];fillRoundRect(ctx,x,y,columnWidth,h,12,'#fff');ctx.fillStyle=event.color;ctx.fillRect(x,y+16,5,h-32);setFont(ctx,24,600);ctx.fillStyle='#27313b';ctx.textBaseline='top';let ty=y+22;for(const line of event.lines){ctx.fillText(line,x+24,ty);ty+=34;}setFont(ctx,22,400);ctx.fillStyle='#667085';ty+=8;for(const line of event.meta){ctx.fillText(line,x+24,ty);ty+=30;}if(index%2===1)y+=h+20;});
+};
+
+export const renderTimetableExport = async (canvas, data, themeKey = 'ocean', includePersonal = false) => {
     if (!canvas || !data) return;
 
     if (document.fonts?.ready) await document.fonts.ready;
 
     const theme = THEMES[themeKey] || THEMES.ocean;
+    if (includePersonal) data = withPersonalEvents(data);
     if (data.view === 'month') {
         drawMonthExport(canvas, data, theme);
     } else {
         drawWeekExport(canvas, data, theme);
     }
+    if (includePersonal) appendPersonalDetails(canvas, data, theme);
 };
 
 const safeFilename = (value) => String(value || '课表')

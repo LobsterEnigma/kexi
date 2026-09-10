@@ -36,6 +36,7 @@ class ShareController extends Controller
         }
 
         $data = $request->validate([
+            'include_personal' => ['nullable', 'boolean'],
             'label' => ['nullable', 'string', 'max:100'],
             'password' => ['nullable', 'string', 'min:6', 'max:100', 'confirmed'],
             'expires_at' => ['nullable', 'date_format:Y-m-d\\TH:i'],
@@ -48,6 +49,7 @@ class ShareController extends Controller
             'token_hash' => hash('sha256', $token),
             'password_hash' => filled($data['password'] ?? null) ? Hash::make($data['password']) : null,
             'expires_at' => $expiresAt,
+            'include_personal' => $request->boolean('include_personal'),
         ]);
 
         return back()
@@ -66,6 +68,19 @@ class ShareController extends Controller
         ]);
 
         return back()->with('status', '分享链接已撤销。');
+    }
+
+    public function update(Request $request, Timetable $timetable, Share $share): RedirectResponse
+    {
+        $this->authorize('update', $timetable);
+        abort_unless($share->timetable_id === $timetable->id && ! $share->revoked_at, 404);
+        $request->validate(['include_personal' => ['required', 'boolean']]);
+        if ($request->boolean('include_personal')) {
+            abort_unless($request->user()->canShare(), 403);
+        }
+        $share->update(['include_personal' => $request->boolean('include_personal')]);
+
+        return back()->with('status', $share->include_personal ? '此分享链接已包含个人安排（不包含私人备注）。' : '此分享链接已隐藏个人安排。');
     }
 
     private function parseExpiration(?string $value, string $timezone): ?CarbonImmutable

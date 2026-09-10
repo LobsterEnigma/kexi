@@ -1,5 +1,6 @@
 import './bootstrap';
 import { registerAcademic } from './academic';
+import { registerPersonal } from './personal';
 import {
     downloadTimetablePng,
     exportThemeOptions,
@@ -12,6 +13,8 @@ import {
     ListChecks,
     BookOpen,
     CalendarDays,
+    CalendarHeart,
+    ClipboardList,
     CalendarRange,
     CalendarX2,
     Check,
@@ -37,8 +40,10 @@ import {
     PanelRightOpen,
     Palette,
     Pencil,
+    Pipette,
     Plus,
     RefreshCw,
+    Repeat,
     RotateCcw,
     Settings,
     Share2,
@@ -56,6 +61,8 @@ const lucideIcons = {
     ListChecks,
     BookOpen,
     CalendarDays,
+    CalendarHeart,
+    ClipboardList,
     CalendarRange,
     CalendarX2,
     Check,
@@ -81,8 +88,10 @@ const lucideIcons = {
     PanelRightOpen,
     Palette,
     Pencil,
+    Pipette,
     Plus,
     RefreshCw,
+    Repeat,
     RotateCcw,
     Settings,
     Share2,
@@ -199,6 +208,10 @@ Alpine.data('timetableWorkbench', (config = {}) => ({
     shareCopied: false,
     exportData: config.exportData || null,
     exportTheme: 'ocean',
+    exportIncludePersonal: false,
+    exportError: '',
+    exportSize: '',
+    exportRevision: 0,
     exportThemes: exportThemeOptions,
     exportReady: false,
     exportingImage: false,
@@ -438,7 +451,7 @@ Alpine.data('timetableWorkbench', (config = {}) => ({
 
     prepareExport() {
         if (!this.exportData) return;
-
+        this.exportIncludePersonal = false;
         this.exportReady = false;
         this.openDialog('export-image');
         this.$nextTick(() => this.renderExportPreview());
@@ -447,10 +460,20 @@ Alpine.data('timetableWorkbench', (config = {}) => ({
     async renderExportPreview() {
         const canvas = this.$refs.exportCanvas;
         if (!canvas || !this.exportData) return;
-
+        const revision = ++this.exportRevision;
         this.exportReady = false;
-        await renderTimetableExport(canvas, this.exportData, this.exportTheme);
-        this.exportReady = true;
+        this.exportError = '';
+        try {
+            const preview = document.createElement('canvas');
+            await renderTimetableExport(preview, this.exportData, this.exportTheme, this.exportIncludePersonal);
+            if (revision !== this.exportRevision) return;
+            canvas.width = preview.width; canvas.height = preview.height;
+            canvas.getContext('2d').drawImage(preview, 0, 0);
+            this.exportSize = `${canvas.width} × ${canvas.height} PNG`;
+            this.exportReady = true;
+        } catch (error) {
+            if (revision === this.exportRevision) this.exportError = error.message || '图片生成失败，请重试。';
+        }
     },
 
     setExportTheme(theme) {
@@ -462,12 +485,13 @@ Alpine.data('timetableWorkbench', (config = {}) => ({
 
     async downloadExportImage() {
         const canvas = this.$refs.exportCanvas;
-        if (!canvas || !this.exportData || this.exportingImage) return;
+        if (!canvas || !this.exportData || !this.exportReady || this.exportingImage) return;
 
         this.exportingImage = true;
         try {
-            await renderTimetableExport(canvas, this.exportData, this.exportTheme);
-            await downloadTimetablePng(canvas, this.exportData.filename);
+            await downloadTimetablePng(canvas, this.exportData.filename + (this.exportIncludePersonal ? '-含个人安排' : ''));
+        } catch (error) {
+            this.exportError = error.message || '下载失败，请重试。';
         } finally {
             this.exportingImage = false;
         }
@@ -550,6 +574,7 @@ Alpine.data('timetableWorkbench', (config = {}) => ({
 }));
 
 registerAcademic(Alpine);
+registerPersonal(Alpine);
 Alpine.start();
 
 window.requestAnimationFrame(() => refreshIcons());

@@ -6,6 +6,7 @@ use App\Http\Requests\StoreTimetableRequest;
 use App\Models\Timetable;
 use App\Services\AcademicPlanner;
 use App\Services\MonthCalendar;
+use App\Services\PersonalPlanner;
 use App\Services\ScheduleAnalyzer;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -35,8 +36,17 @@ class TimetableController extends Controller
         ScheduleAnalyzer $analyzer,
         MonthCalendar $monthCalendar,
         AcademicPlanner $academicPlanner,
+        PersonalPlanner $personalPlanner,
     ): View {
         $this->authorize('view', $timetable);
+        $display = $request->session()->get('calendar_display.'.$request->user()->id, ['courses' => true, 'academic' => true, 'personal' => true]);
+        if ($request->has('display_settings')) {
+            $request->validate(['show_courses' => ['required', 'boolean'], 'show_academic' => ['required', 'boolean'], 'show_personal' => ['required', 'boolean']]);
+            foreach (['courses', 'academic', 'personal'] as $kind) {
+                $display[$kind] = $request->boolean('show_'.$kind);
+            }
+            $request->session()->put('calendar_display.'.$request->user()->id, $display);
+        }
         $requestedWeek = $request->query('week');
         $week = min(max(
             $requestedWeek === null ? $timetable->currentWeek() : $request->integer('week'),
@@ -50,6 +60,18 @@ class TimetableController extends Controller
             $task->opens_at, $task->due_at, $task->starts_at, $task->ends_at,
             ...$task->entries->flatMap(fn ($entry) => [$entry->starts_at, $entry->ends_at, $entry->due_at])->all(),
         ])->filter()->all();
+        foreach ($request->user()->personalEvents()->with('exceptions')->get() as $personalEvent) {
+            $academicDates[] = $personalEvent->starts_at;
+            $academicDates[] = $personalEvent->ends_at;
+            if ($personalEvent->repeat_until) {
+                $academicDates[] = CarbonImmutable::parse($personalEvent->repeat_until->toDateString(), $personalEvent->timezone)->addDays(7);
+            }
+            foreach ($personalEvent->exceptions as $exception) {
+                if (! $exception->canceled && isset($exception->overrides['starts_at'])) {
+                    $academicDates[] = CarbonImmutable::parse($exception->overrides['starts_at'], 'UTC');
+                }
+            }
+        }
         $monthCalendarData = $viewMode === 'month'
             ? $monthCalendar->build($timetable, $request->query('month'), $week, $academicDates)
             : null;
@@ -60,14 +82,19 @@ class TimetableController extends Controller
         $analysis = $analyzer->forWeek($timetable, $week);
         $academicDays = [];
         $academicLayout = null;
+        $personalDays = [];
         if ($timetable->term_start_date) {
             $academicStart = $monthCalendarData
                 ? $monthCalendarData['cells']->first()['date']
                 : CarbonImmutable::instance($timetable->weekStartDate($week));
             $academicEnd = $monthCalendarData ? $monthCalendarData['cells']->last()['date'] : $academicStart->addDays(6);
-            $academicDays = $academicPlanner->calendar($timetable, $academicStart, $academicEnd, $academicTasks);
+            $personalDays = $personalPlanner->calendar($timetable, $academicStart, $academicEnd);
+            $academicDays = $display['academic'] ? $academicPlanner->calendar($timetable, $academicStart, $academicEnd, $academicTasks) : [];
+            if ($display['personal']) {
+                $academicDays = $personalPlanner->merge($academicDays, $personalDays);
+            }
             if (! $monthCalendarData) {
-                $academicLayout = $academicPlanner->layoutWeek($analysis, $academicDays, $academicStart);
+                $academicLayout = $academicPlanner->layoutWeek([...$analysis, 'items' => $display['courses'] ? $analysis['items'] : []], $academicDays, $academicStart);
             }
         }
         $shares = $timetable->shares()->latest()->get();
@@ -86,6 +113,8 @@ class TimetableController extends Controller
             'shares',
             'academicDays',
             'academicLayout',
+            'personalDays',
+            'display',
         ));
     }
 

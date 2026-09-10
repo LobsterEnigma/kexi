@@ -30,6 +30,11 @@ class User extends Authenticatable
         return $this->hasMany(Timetable::class);
     }
 
+    public function personalEvents(): HasMany
+    {
+        return $this->hasMany(PersonalEvent::class);
+    }
+
     public function isBanned(): bool
     {
         return $this->banned_at !== null;

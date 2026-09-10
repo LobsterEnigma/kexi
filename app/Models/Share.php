@@ -19,6 +19,7 @@ class Share extends Model
         'disabled_by_admin_at',
         'disabled_reason',
         'access_version',
+        'include_personal',
     ];
 
     protected $hidden = ['token_hash', 'password_hash'];
@@ -26,6 +27,7 @@ class Share extends Model
     protected function casts(): array
     {
         return [
+            'include_personal' => 'boolean',
             'expires_at' => 'datetime',
             'revoked_at' => 'datetime',
             'disabled_by_admin_at' => 'datetime',

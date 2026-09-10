@@ -8,10 +8,10 @@
         ? collect(range(0, 6))->map(fn (int $day) => $weekStartDate->copy()->addDays($day))
         : collect();
     $weekdays = [1 => '周一', 2 => '周二', 3 => '周三', 4 => '周四', 5 => '周五', 6 => '周六', 7 => '周日'];
-    $items = collect(data_get($analysis, 'items', []));
+    $items = collect($personalLayout['items'] ?? data_get($analysis, 'items', []));
     $itemsByDay = $items->groupBy(fn ($item) => (int) data_get($item, 'meeting.weekday'));
-    $dayStart = (int) data_get($analysis, 'day_start', 8 * 60);
-    $dayEnd = (int) data_get($analysis, 'day_end', 22 * 60);
+    $dayStart = (int) ($personalLayout['day_start'] ?? data_get($analysis, 'day_start', 8 * 60));
+    $dayEnd = (int) ($personalLayout['day_end'] ?? data_get($analysis, 'day_end', 22 * 60));
     $calendarHeight = max(60, $dayEnd - $dayStart);
     $slotCount = (int) ceil($calendarHeight / 30);
     $startHour = (int) floor($dayStart / 60);
@@ -111,6 +111,7 @@
                         @endforeach
                     </div>
 
+                    @if(collect($personalDays)->contains(fn($day)=>!empty($day['banners'])))<div class="academic-deadlines"><div class="academic-deadlines__label">全天安排</div>@foreach($weekDates as $date)<div class="academic-deadlines__day">@foreach($personalDays[$date->toDateString()]['banners']??[] as $event)<article class="academic-calendar-chip" style="--task-color: {{ $event['color'] }}"><span>{{ $event['label'] }}</span><strong>{{ $event['title'] }}</strong><span>{{ $event['location'] }}</span></article>@endforeach</div>@endforeach</div>@endif
                     <div class="calendar-body" style="height: {{ $calendarHeight }}px">
                         <div class="calendar-time-axis" style="height: {{ $calendarHeight }}px">
                             @for ($hour = $startHour; $hour < $endHour; $hour++)
@@ -124,6 +125,7 @@
                                     <span class="calendar-slot" aria-hidden="true"></span>
                                 @endfor
 
+                                @foreach(collect($personalLayout['academic']??[])->where('weekday',$weekdayNumber) as $event)<article class="academic-time-event {{ $event['conflict']?'has-conflict':'' }}" style="--task-color: {{ $event['color'] }}; --event-top: {{ $event['start_minute']-$dayStart }}px; --event-height: {{ max(18,$event['end_minute']-$event['start_minute']) }}px; --lane: {{ $event['lane'] }}; --lane-count: {{ $event['lane_count'] }}" tabindex="0" title="{{ $event['title'] }} · {{ $event['full_time'] }} · {{ $event['location'] }}"><small>{{ $event['label'] }}{{ $event['conflict']?' · 时间重叠':'' }}</small><strong>{{ $event['title'] }}</strong><span>{{ $event['time'] }}</span><span>{{ $event['location'] }}</span></article>@endforeach
                                 @foreach ($itemsByDay->get($weekdayNumber, collect()) as $item)
                                     @php
                                         $meeting = data_get($item, 'meeting');

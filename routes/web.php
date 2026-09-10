@@ -5,6 +5,7 @@ use App\Http\Controllers\AcademicTaskExportController;
 use App\Http\Controllers\CourseCancellationRecordController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\CourseMeetingCancellationController;
+use App\Http\Controllers\PersonalEventController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicShareController;
 use App\Http\Controllers\ShareController;
@@ -25,6 +26,13 @@ Route::post('/s/{token}/unlock', [PublicShareController::class, 'unlock'])
     ->name('public-shares.unlock');
 
 Route::middleware(['auth', 'active'])->group(function () {
+    Route::get('/personal-events', [PersonalEventController::class, 'index'])->name('personal-events.index');
+    Route::get('/personal-events/create', [PersonalEventController::class, 'create'])->name('personal-events.create');
+    Route::post('/personal-events', [PersonalEventController::class, 'store'])->name('personal-events.store');
+    Route::get('/personal-events/{event}/edit', [PersonalEventController::class, 'edit'])->name('personal-events.edit');
+    Route::patch('/personal-events/{event}', [PersonalEventController::class, 'update'])->name('personal-events.update');
+    Route::post('/personal-events/{event}/cancel', [PersonalEventController::class, 'cancel'])->name('personal-events.cancel');
+    Route::delete('/personal-events/{event}', [PersonalEventController::class, 'destroy'])->name('personal-events.destroy');
     Route::get('/dashboard', [TimetableController::class, 'index'])->name('dashboard');
     Route::get('/timetables', [TimetableController::class, 'index'])->name('timetables.index');
     Route::post('/timetables', [TimetableController::class, 'store'])->name('timetables.store');
@@ -65,6 +73,7 @@ Route::middleware(['auth', 'active'])->group(function () {
         ->name('shares.store');
     Route::delete('/timetables/{timetable}/shares/{share}', [ShareController::class, 'destroy'])
         ->name('shares.destroy');
+    Route::patch('/timetables/{timetable}/shares/{share}', [ShareController::class, 'update'])->name('shares.update');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

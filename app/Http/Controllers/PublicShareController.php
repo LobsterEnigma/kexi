@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Share;
+use App\Services\AcademicPlanner;
+use App\Services\PersonalPlanner;
 use App\Services\ScheduleAnalyzer;
 use App\Services\ShareAvailability;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -33,6 +36,13 @@ class PublicShareController extends Controller
             1,
         ), $timetable->week_count);
         $analysis = $analyzer->forWeek($timetable, $week);
+        $personalDays = [];
+        $personalLayout = null;
+        if ($share->include_personal && $timetable->term_start_date) {
+            $from = CarbonImmutable::instance($timetable->weekStartDate($week));
+            $personalDays = app(PersonalPlanner::class)->calendar($timetable, $from, $from->addDays(6), true);
+            $personalLayout = app(AcademicPlanner::class)->layoutWeek($analysis, $personalDays, $from);
+        }
 
         $share->increment('views_count');
         $share->forceFill(['last_viewed_at' => now()])->save();
@@ -43,6 +53,8 @@ class PublicShareController extends Controller
             'timetable',
             'week',
             'analysis',
+            'personalDays',
+            'personalLayout',
         )));
     }
 

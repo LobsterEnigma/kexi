@@ -22,6 +22,7 @@
                     </span>
                     <h1 class="mt-4 text-2xl font-bold leading-8 text-slate-900">创建你的第一张课表</h1>
                     <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600">先设置学期和提醒阈值，进入工作台后再添加课程时间段。</p>
+                    <a class="mt-3 inline-block text-sm text-blue-600" href="{{ route('personal-events.index') }}">也可以先管理个人安排 →</a>
                 </div>
 
                 @if ($errors->any())

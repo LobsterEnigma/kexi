@@ -218,6 +218,7 @@
 
             return [
                 'day' => (int) $cellDate?->day,
+                'date' => $cellDate?->toDateString(),
                 'weekday' => (int) $cellDate?->isoWeekday(),
                 'inMonth' => (bool) data_get($cell, 'in_month'),
                 'inTerm' => (bool) data_get($cell, 'in_term'),
@@ -251,6 +252,13 @@
         ],
         'items' => $exportWeekItems,
         'cells' => $exportMonthCells,
+        'personal' => collect($personalDays)->filter(fn($day, $date) => !$isMonthView || str_starts_with($date, $monthValue))->flatMap(function ($day, $date) {
+            return collect([...($day['banners'] ?? []), ...($day['timed'] ?? [])])->map(fn ($event) => [
+                'date' => $date, 'weekday' => \Carbon\CarbonImmutable::parse($date)->isoWeekday(), 'name' => $event['title'], 'category' => $event['type'],
+                'color' => $event['color'], 'location' => $event['location'], 'time' => $event['time'],
+                'allDay' => $event['time'] === '全天', 'startMinute' => $event['start_minute'], 'endMinute' => $event['end_minute'],
+            ]);
+        })->values()->all(),
         'filename' => trim(implode('-', array_filter([
             $timetable->term_name ?: $timetable->name,
             $exportLabel,
@@ -268,6 +276,7 @@
         $startHour = (int) floor($dayStart / 60);
         $endHour = (int) ceil($dayEnd / 60);
     }
+    if (!$display['courses']) { $items = collect(); $itemsByDay = collect(); }
 @endphp
 
 <x-app-layout>
@@ -481,6 +490,30 @@
                 >月视图</a>
                 <a class="wb-tab wb-tab--records" href="{{ route('timetables.cancellation-records', $timetable) }}">请假记录</a>
                 <div class="wb-toolbar-tools" role="group" aria-label="课表工具">
+                    <details class="calendar-visibility" x-on:click.outside="$el.open = false" x-on:keydown.escape.stop="$el.open = false; $el.querySelector('summary').focus()">
+                        <summary class="wb-utility-btn" aria-label="显示内容" title="显示内容"><i data-lucide="sliders-horizontal"></i><span>显示内容</span></summary>
+                        <form method="GET" class="calendar-visibility__panel" aria-label="日历显示设置">
+                            <input type="hidden" name="display_settings" value="1">
+                            <input type="hidden" name="view" value="{{ $viewMode }}">
+                            <input type="hidden" name="week" value="{{ $weekNumber }}">
+                            <input type="hidden" name="month" value="{{ $monthValue }}">
+                            <div class="calendar-visibility__heading"><strong>日历显示</strong><p>选择你想在课表中看到的内容</p></div>
+                            <div class="calendar-visibility__options">
+                                @foreach(['courses'=>['课程','上课时间与地点','book-open'],'academic'=>['学业任务','作业、考试与学习计划','clipboard-list'],'personal'=>['个人安排','运动、社团与日常活动','calendar-heart']] as $kind=>$option)
+                                    <input type="hidden" name="show_{{ $kind }}" value="0">
+                                    <label class="calendar-visibility__option">
+                                        <span class="calendar-visibility__icon calendar-visibility__icon--{{ $kind }}"><i data-lucide="{{ $option[2] }}"></i></span>
+                                        <span class="calendar-visibility__text"><strong>{{ $option[0] }}</strong><small>{{ $option[1] }}</small></span>
+                                        <input type="checkbox" name="show_{{ $kind }}" value="1" aria-label="{{ $option[0] }}" @checked($display[$kind])>
+                                    </label>
+                                @endforeach
+                            </div>
+                            <div class="calendar-visibility__footer">
+                                <button class="wb-btn wb-btn--primary" type="submit"><i data-lucide="check"></i>应用显示</button>
+                                <a href="{{ route('personal-events.create',['timetable'=>$timetable]) }}"><i data-lucide="plus"></i>添加个人安排</a>
+                            </div>
+                        </form>
+                    </details>
                     <x-academic-reminders :timetable="$timetable" />
                     <span class="wb-toolbar-tools__divider" aria-hidden="true"></span>
                     <button class="wb-utility-btn" type="button" x-bind:aria-expanded="diagnosticsOpen" aria-label="课表检查" title="查看课程冲突与临近安排" x-on:click="diagnosticsOpen = !diagnosticsOpen; diagnosticFilter = 'all'">
@@ -556,7 +589,7 @@
                                 @php
                                     $cellDate = data_get($cell, 'date');
                                     $cellWeek = data_get($cell, 'week');
-                                    $cellEvents = collect(data_get($cell, 'events', []));
+                                    $cellEvents = $display['courses'] ? collect(data_get($cell, 'events', [])) : collect();
                                     $cellClasses = collect([
                                         ! data_get($cell, 'in_month') ? 'month-day--outside' : null,
                                         ! data_get($cell, 'in_term') ? 'month-day--disabled' : null,
@@ -592,10 +625,7 @@
                                             $academicCell=$academicDays[$cellDate->toDateString()] ?? [];
                                             $academicCellEvents=collect([...($academicCell['banners']??[]),...($academicCell['timed']??[])]);
                                         @endphp
-                                        @foreach($academicCellEvents->take(3) as $academicEvent)
-                                            <a class="academic-calendar-chip {{ $academicEvent['completed']?'is-complete':'' }}" style="--task-color: {{ $academicEvent['color'] }}" href="{{ $academicEvent['url'] }}" title="{{ $academicEvent['title'] }} · {{ $academicEvent['label'] }} {{ $academicEvent['time']??'' }}"><span>{{ $academicEvent['completed']?'✓ ':'' }}{{ $academicEvent['label'] }} {{ $academicEvent['time']??'' }}</span><strong>{{ $academicEvent['title'] }}</strong></a>
-                                        @endforeach
-                                        @if($academicCellEvents->count()>3)<a class="month-day__more" href="{{ route('academic-tasks.index',['timetable'=>$timetable,'status'=>'all','date'=>$cellDate->toDateString()]) }}">查看全部 {{ $academicCellEvents->count() }} 项安排</a>@endif
+                                        <x-calendar-extras :events="$academicCellEvents" />
                                         @foreach ($cellEvents as $meeting)
                                             @php
                                                 $course = $meeting->course;
@@ -621,7 +651,7 @@
                                             </button>
                                         @endforeach
 
-                                        @if ((int) data_get($cell, 'overflow_count', 0) > 0)
+                                        @if ($display['courses'] && (int) data_get($cell, 'overflow_count', 0) > 0)
                                             <a
                                                 class="month-day__more"
                                                 href="{{ route('timetables.show', ['timetable' => $timetable, 'view' => 'week', 'week' => $cellWeek]) }}"
@@ -657,13 +687,12 @@
                     </div>
 
                     @if($weekDates->isNotEmpty() && collect($academicDays)->contains(fn($day)=>!empty($day['banners'])))
-                        <div class="academic-deadlines"><div class="academic-deadlines__label">截止 / 开放</div>
+                        <div class="academic-deadlines"><div class="academic-deadlines__label">全天 / 事项</div>
                             @foreach($weekDates as $date)<div class="academic-deadlines__day" data-agenda-date="{{ $date->toDateString() }}">
                                 @php
                                     $banners=collect($academicDays[$date->toDateString()]['banners']??[]);
                                 @endphp
-                                @foreach($banners->take(3) as $academicEvent)<a class="academic-calendar-chip {{ $academicEvent['completed']?'is-complete':'' }}" style="--task-color: {{ $academicEvent['color'] }}" href="{{ $academicEvent['url'] }}" title="{{ $academicEvent['title'] }} · {{ $academicEvent['label'] }}"><span>{{ $academicEvent['completed']?'✓ ':'' }}{{ $academicEvent['label'] }}</span><strong>{{ $academicEvent['title'] }}</strong></a>@endforeach
-                                @if($banners->count()>3)<a class="month-day__more" href="{{ route('academic-tasks.index',['timetable'=>$timetable,'status'=>'all','date'=>$date->toDateString()]) }}">另有 {{ $banners->count()-3 }} 项</a>@endif
+                                <x-calendar-extras :events="$banners" />
                             </div>@endforeach
                         </div>
                     @endif
@@ -750,8 +779,8 @@
                         @if ($items->isEmpty() && empty($academicDays))
                             <div class="wb-empty-calendar">
                                 <i data-lucide="calendar-range"></i>
-                                <strong class="text-sm text-slate-800">第 {{ $weekNumber }} 周还没有课程</strong>
-                                <span>添加课程后，冲突与间隔会在右侧自动分析。</span>
+                                <strong class="text-sm text-slate-800">当前没有可显示的安排</strong>
+                                <span>可在「显示内容」中检查勾选，或添加课程和个人安排。</span>
                                 <button class="wb-btn wb-btn--primary" type="button" x-on:click="openDialog('course-create')">
                                     添加课程
                                 </button>
@@ -1112,6 +1141,7 @@
             </div>
 
             <div class="wb-modal-body wb-export-body">
+                <label class="personal-checkbox"><input type="checkbox" x-model="exportIncludePersonal" x-on:change="renderExportPreview()">包含当前周 / 月的个人安排</label><p class="academic-field-help mb-4">默认仅导出课程。勾选后附个人活动明细和地点，私人备注始终不导出。</p>
                 <div class="wb-export-toolbar">
                     <span class="wb-export-toolbar__label"><i data-lucide="palette"></i>图片主题</span>
                     <div class="wb-export-themes" role="group" aria-label="选择导出图片主题">
@@ -1139,15 +1169,15 @@
                         x-ref="exportCanvas"
                         aria-label="{{ $exportLabel }}课表图片预览"
                     ></canvas>
-                    <div class="wb-export-loading" x-show="!exportReady" aria-live="polite">
+                    <div class="wb-export-loading" x-show="!exportReady && !exportError" aria-live="polite">
                         <span class="wb-export-spinner" aria-hidden="true"></span>
                         正在排版图片
                     </div>
                 </div>
-
+                <p class="academic-errors" x-show="exportError" x-text="exportError" role="alert" x-cloak></p>
                 <div class="wb-export-meta">
-                    <span>{{ $isMonthView ? '2400 × 1800' : '2400 × 1600' }} PNG</span>
-                    <span>保留课程颜色、地点和状态；不包含个人任务与学习计划</span>
+                    <span x-text="exportSize || '高清 PNG'"></span>
+                    <span>保留课程颜色、地点和状态；个人安排按勾选包含，不含学业任务或学习计划</span>
                 </div>
             </div>
 
@@ -1202,6 +1232,7 @@
                             <span class="wb-label">链接备注</span>
                             <input class="wb-field" type="text" name="label" value="{{ old('label') }}" maxlength="100" placeholder="例：发给学习小组">
                         </label>
+                        <div class="wb-field-group--full"><label class="personal-checkbox"><input type="checkbox" name="include_personal" value="1" @checked(old('include_personal'))>此链接包含个人安排</label><p class="wb-help">默认关闭。开启后，查看者可看到课表日期内的个人活动名称、分类、时间和地点，包括之后新增的活动；不公开备注，可在下方随时关闭。</p></div>
                         <label class="wb-field-group wb-field-group--full">
                             <span class="wb-label">失效时间</span>
                             <input class="wb-field" type="datetime-local" name="expires_at" value="{{ old('expires_at') }}">
@@ -1233,10 +1264,11 @@
                                 <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-600">
                                     <i data-lucide="link-2" class="h-5 w-5"></i>
                                 </span>
-                                <span class="min-w-0 flex-1">
+                                <div class="min-w-0 flex-1">
                                     <span class="block truncate text-sm font-semibold text-slate-800">{{ $share->label ?: '未命名分享' }}</span>
                                     <span class="mt-0.5 block text-xs text-slate-500">{{ $shareStatus }} · 查看 {{ (int) $share->views_count }} 次</span>
-                                </span>
+                                    @if(!$isRevoked)<form class="mt-2" method="POST" action="{{ route('shares.update',[$timetable,$share]) }}">@csrf @method('PATCH')<input type="hidden" name="include_personal" value="{{ $share->include_personal?0:1 }}"><button class="text-xs text-blue-600" type="submit">{{ $share->include_personal?'已包含个人安排 · 点击关闭':'未包含个人安排 · 点击开启' }}</button></form>@endif
+                                </div>
                                 @if ($canRevoke)
                                     <form method="POST" action="{{ route('shares.destroy', [$timetable, $share]) }}" x-on:submit="confirm('撤销后，该链接会立即失效。确定继续吗？') || $event.preventDefault()">
                                         @csrf

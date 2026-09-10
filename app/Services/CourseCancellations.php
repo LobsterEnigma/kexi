@@ -39,7 +39,7 @@ class CourseCancellations
             'label' => $meeting->label,
             'week_number' => $cancellation->week_number,
             'weekday' => $meeting->weekday,
-            'occurrence_date' => $timetable->term_start_date?->copy()->addWeeks($cancellation->week_number - 1)->addDays($meeting->weekday - 1),
+            'occurrence_date' => $timetable->occurrenceDate($cancellation->week_number, $meeting->weekday),
             'starts_at' => $meeting->starts_at,
             'ends_at' => $meeting->ends_at,
             'action' => $action,

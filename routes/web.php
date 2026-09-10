@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\AcademicTaskController;
+use App\Http\Controllers\AcademicTaskExportController;
 use App\Http\Controllers\CourseCancellationRecordController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\CourseMeetingCancellationController;
@@ -30,6 +32,24 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/timetables/{timetable}/cancellation-records', [CourseCancellationRecordController::class, 'index'])->name('timetables.cancellation-records');
     Route::patch('/timetables/{timetable}', [TimetableController::class, 'update'])->name('timetables.update');
     Route::delete('/timetables/{timetable}', [TimetableController::class, 'destroy'])->name('timetables.destroy');
+
+    Route::prefix('/timetables/{timetable}/tasks')->group(function () {
+        Route::get('/', [AcademicTaskController::class, 'index'])->name('academic-tasks.index');
+        Route::get('/create', [AcademicTaskController::class, 'create'])->name('academic-tasks.create');
+        Route::get('/export', [AcademicTaskExportController::class, 'options'])->name('academic-tasks.export');
+        Route::get('/export/download', [AcademicTaskExportController::class, 'download'])->name('academic-tasks.export-download');
+        Route::get('/reminders', [AcademicTaskController::class, 'reminders'])->name('academic-tasks.reminders');
+        Route::post('/reminders/acknowledge', [AcademicTaskController::class, 'acknowledge'])->name('academic-tasks.acknowledge');
+        Route::post('/', [AcademicTaskController::class, 'store'])->name('academic-tasks.store');
+        Route::get('/{task}/edit', [AcademicTaskController::class, 'edit'])->name('academic-tasks.edit');
+        Route::patch('/{task}', [AcademicTaskController::class, 'update'])->name('academic-tasks.update');
+        Route::patch('/{task}/complete', [AcademicTaskController::class, 'complete'])->name('academic-tasks.complete');
+        Route::delete('/{task}', [AcademicTaskController::class, 'destroy'])->name('academic-tasks.destroy');
+        Route::post('/{task}/entries', [AcademicTaskController::class, 'storeEntry'])->name('academic-entries.store');
+        Route::patch('/{task}/entries/{entry}', [AcademicTaskController::class, 'updateEntry'])->name('academic-entries.update');
+        Route::patch('/{task}/entries/{entry}/complete', [AcademicTaskController::class, 'completeEntry'])->name('academic-entries.complete');
+        Route::delete('/{task}/entries/{entry}', [AcademicTaskController::class, 'destroyEntry'])->name('academic-entries.destroy');
+    });
 
     Route::post('/timetables/{timetable}/courses', [CourseController::class, 'store'])->name('courses.store');
     Route::patch('/timetables/{timetable}/courses/{course}/archive', [CourseController::class, 'archive'])->name('courses.archive');

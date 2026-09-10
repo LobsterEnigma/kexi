@@ -6,6 +6,7 @@
 @php
     $plans = collect($timetables);
     $user = auth()->user();
+    $isAcademic = request()->routeIs('academic-tasks.*', 'academic-entries.*');
 @endphp
 
 <div class="wb-sidebar h-full">
@@ -15,10 +16,12 @@
     </a>
 
     <nav class="wb-nav" aria-label="工作台导航">
-        <a class="wb-nav__item" href="{{ route('timetables.show', $timetable) }}" aria-current="page" title="我的课表">
+        <a class="wb-nav__item" href="{{ route('timetables.show', $timetable) }}" @if(!$isAcademic) aria-current="page" @endif title="我的课表">
             <i data-lucide="calendar-days"></i>
             <span class="wb-nav__label">我的课表</span>
         </a>
+
+        <a class="wb-nav__item" href="{{ route('academic-tasks.index',$timetable) }}" @if($isAcademic) aria-current="page" @endif title="学业任务"><i data-lucide="file-text"></i><span class="wb-nav__label">学业任务</span></a>
 
         <button class="wb-nav__item" type="button" x-on:click="openDialog('share')" title="分享管理">
             <i data-lucide="share-2"></i>
@@ -49,7 +52,7 @@
             @forelse ($plans as $plan)
                 <a
                     class="wb-plan"
-                    href="{{ route('timetables.show', $plan) }}"
+                    href="{{ route($isAcademic ? 'academic-tasks.index' : 'timetables.show', $plan) }}"
                     aria-current="{{ (string) $plan->getKey() === (string) $timetable->getKey() ? 'true' : 'false' }}"
                     title="{{ trim(($plan->term_name ? $plan->term_name.' · ' : '').$plan->name) }}"
                 >

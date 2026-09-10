@@ -34,4 +34,9 @@ class Course extends Model
     {
         return $this->hasMany(CourseMeeting::class)->chaperone()->orderBy('sort_order')->orderBy('id');
     }
+
+    public function academicTasks(): HasMany
+    {
+        return $this->hasMany(AcademicTask::class);
+    }
 }

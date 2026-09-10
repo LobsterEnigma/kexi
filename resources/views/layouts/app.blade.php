@@ -14,7 +14,7 @@
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    @php($usesFixedWorkbench = request()->routeIs('dashboard', 'timetables.*', 'public-shares.*'))
+    @php($usesFixedWorkbench = request()->routeIs('dashboard', 'timetables.*', 'public-shares.*', 'academic-tasks.*', 'academic-entries.*'))
     @php($usesCustomLayout = $usesFixedWorkbench || request()->routeIs('profile.*'))
 
     <body class="font-sans antialiased {{ $usesFixedWorkbench ? 'overflow-hidden bg-white' : 'bg-gray-100' }}">

@@ -25,15 +25,16 @@
             <button class="border border-slate-800 bg-slate-800 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-700">筛选</button>
         </form>
 
-        <div class="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
-            <table class="min-w-[940px] divide-y divide-gray-200 text-sm">
+        <div class="admin-users-scroll overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm" tabindex="0" role="region" aria-label="用户管理表格，可横向滚动">
+            <table class="admin-users-table w-full min-w-[940px] table-fixed divide-y divide-gray-200 text-sm">
+                <colgroup><col style="width:25%"><col style="width:7%"><col style="width:20%"><col style="width:18%"><col style="width:30%"></colgroup>
                 <thead class="bg-gray-50 text-left text-xs font-semibold uppercase text-gray-500">
                     <tr>
                         <th class="px-4 py-3">用户</th>
                         <th class="px-4 py-3">课表</th>
                         <th class="px-4 py-3">账户状态</th>
                         <th class="px-4 py-3">分享状态</th>
-                        <th class="px-4 py-3 text-right">操作</th>
+                        <th class="px-4 py-3">操作</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -79,8 +80,8 @@
                                     <span class="font-medium text-emerald-700">可用</span>
                                 @endif
                             </td>
-                            <td class="min-w-64 px-4 py-4 text-right">
-                                <div class="flex flex-col items-end gap-2">
+                            <td class="px-4 py-4 text-left">
+                                <div class="flex flex-col items-start gap-2">
                                     @if ($user->is(auth()->user()))
                                         <div class="w-full border border-blue-100 bg-blue-50 px-3 py-2 text-left text-xs leading-5 text-blue-800">
                                             当前登录账户不能审查或封禁

@@ -3,7 +3,7 @@
     $weekCount = max(1, (int) $timetable->week_count);
     $previousWeek = max(1, $weekNumber - 1);
     $nextWeek = min($weekCount, $weekNumber + 1);
-    $weekStartDate = $timetable->term_start_date?->copy()->addWeeks($weekNumber - 1);
+    $weekStartDate = $timetable->weekStartDate($weekNumber);
     $weekDates = $weekStartDate
         ? collect(range(0, 6))->map(fn (int $day) => $weekStartDate->copy()->addDays($day))
         : collect();

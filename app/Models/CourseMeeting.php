@@ -66,6 +66,12 @@ class CourseMeeting extends Model
         if ($week < 1) {
             return false;
         }
+        $timetable = $this->course?->timetable;
+        $date = $timetable?->occurrenceDate($week, (int) $this->weekday);
+        if ($date && ($date->toDateString() < $timetable->term_start_date->toDateString()
+            || $date->toDateString() > $timetable->resolvedTermEndDate()->toDateString())) {
+            return false;
+        }
 
         return match ($this->week_mode) {
             WeekMode::All => $week >= $this->start_week && $week <= $this->end_week,

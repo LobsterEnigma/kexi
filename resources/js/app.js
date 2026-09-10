@@ -1,4 +1,5 @@
 import './bootstrap';
+import { registerAcademic } from './academic';
 import {
     downloadTimetablePng,
     exportThemeOptions,
@@ -7,6 +8,8 @@ import {
 
 import Alpine from 'alpinejs';
 import {
+    Bell,
+    ListChecks,
     BookOpen,
     CalendarDays,
     CalendarRange,
@@ -17,6 +20,7 @@ import {
     ChevronRight,
     Circle,
     CircleCheckBig,
+    CircleHelp,
     Clock3,
     Copy,
     Download,
@@ -48,6 +52,8 @@ import {
 } from 'lucide';
 
 const lucideIcons = {
+    Bell,
+    ListChecks,
     BookOpen,
     CalendarDays,
     CalendarRange,
@@ -58,6 +64,7 @@ const lucideIcons = {
     ChevronRight,
     Circle,
     CircleCheckBig,
+    CircleHelp,
     Clock3,
     Copy,
     Download,
@@ -115,6 +122,8 @@ const blankMeeting = (weekCount = 18) => ({
     specific_weeks: '',
 });
 
+const mondayOfUtcDate = (timestamp) => timestamp - ((new Date(timestamp).getUTCDay() + 6) % 7) * 86400000;
+
 const parseIsoDateAsUtc = (value) => {
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '');
 
@@ -165,18 +174,18 @@ Alpine.data('timetableTermRange', (config = {}) => ({
 
         if (start === null || end === null || end < start) return;
 
-        const days = Math.floor((end - start) / 86400000) + 1;
-        this.weekCount = Math.min(30, Math.max(1, Math.ceil(days / 7)));
+        const days = Math.floor((end - mondayOfUtcDate(start)) / 86400000) + 1;
+        this.weekCount = Math.min(31, Math.max(1, Math.ceil(days / 7)));
     },
 
     syncEndFromWeeks() {
         const start = parseIsoDateAsUtc(this.startDate);
-        const weeks = Math.min(30, Math.max(1, Number(this.weekCount || 1)));
+        const weeks = Math.min(31, Math.max(1, Number(this.weekCount || 1)));
 
         if (start === null) return;
 
         this.weekCount = weeks;
-        this.endDate = formatUtcDate(start + ((weeks * 7) - 1) * 86400000);
+        this.endDate = formatUtcDate(mondayOfUtcDate(start) + ((weeks * 7) - 1) * 86400000);
     },
 }));
 
@@ -497,7 +506,7 @@ Alpine.data('timetableWorkbench', (config = {}) => ({
 
         if (selectedDate === null || termStartDate === null) return;
 
-        const dayOffset = Math.floor((selectedDate - termStartDate) / 86400000);
+        const dayOffset = Math.floor((selectedDate - mondayOfUtcDate(termStartDate)) / 86400000);
         const week = Math.min(this.weekCount, Math.max(1, Math.floor(dayOffset / 7) + 1));
         const url = new URL(this.timetableUrl, window.location.origin);
 
@@ -540,6 +549,7 @@ Alpine.data('timetableWorkbench', (config = {}) => ({
     },
 }));
 
+registerAcademic(Alpine);
 Alpine.start();
 
 window.requestAnimationFrame(() => refreshIcons());

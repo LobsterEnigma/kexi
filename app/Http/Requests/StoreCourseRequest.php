@@ -62,10 +62,10 @@ class StoreCourseRequest extends FormRequest
             'meetings.*.ends_at' => ['required', 'date_format:H:i'],
             'meetings.*.location' => ['nullable', 'string', 'max:120'],
             'meetings.*.week_mode' => ['required', Rule::enum(WeekMode::class)],
-            'meetings.*.start_week' => ['nullable', 'integer', 'between:1,30'],
-            'meetings.*.end_week' => ['nullable', 'integer', 'between:1,30'],
-            'meetings.*.specific_weeks' => ['nullable', 'array', 'max:30'],
-            'meetings.*.specific_weeks.*' => ['integer', 'between:1,30'],
+            'meetings.*.start_week' => ['nullable', 'integer', 'between:1,31'],
+            'meetings.*.end_week' => ['nullable', 'integer', 'between:1,31'],
+            'meetings.*.specific_weeks' => ['nullable', 'array', 'max:31'],
+            'meetings.*.specific_weeks.*' => ['integer', 'between:1,31'],
         ];
     }
 

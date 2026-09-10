@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreTimetableRequest;
 use App\Models\Timetable;
+use App\Services\AcademicPlanner;
 use App\Services\MonthCalendar;
 use App\Services\ScheduleAnalyzer;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +34,7 @@ class TimetableController extends Controller
         Timetable $timetable,
         ScheduleAnalyzer $analyzer,
         MonthCalendar $monthCalendar,
+        AcademicPlanner $academicPlanner,
     ): View {
         $this->authorize('view', $timetable);
         $requestedWeek = $request->query('week');
@@ -42,14 +45,31 @@ class TimetableController extends Controller
         $viewMode = $request->query('view') === 'month' && $timetable->term_start_date
             ? 'month'
             : 'week';
+        $academicTasks = $academicPlanner->tasks($timetable);
+        $academicDates = $academicTasks->flatMap(fn ($task) => [
+            $task->opens_at, $task->due_at, $task->starts_at, $task->ends_at,
+            ...$task->entries->flatMap(fn ($entry) => [$entry->starts_at, $entry->ends_at, $entry->due_at])->all(),
+        ])->filter()->all();
         $monthCalendarData = $viewMode === 'month'
-            ? $monthCalendar->build($timetable, $request->query('month'), $week)
+            ? $monthCalendar->build($timetable, $request->query('month'), $week, $academicDates)
             : null;
         $timetables = $request->user()->timetables()
             ->orderByDesc('is_default')
             ->orderByDesc('updated_at')
             ->get();
         $analysis = $analyzer->forWeek($timetable, $week);
+        $academicDays = [];
+        $academicLayout = null;
+        if ($timetable->term_start_date) {
+            $academicStart = $monthCalendarData
+                ? $monthCalendarData['cells']->first()['date']
+                : CarbonImmutable::instance($timetable->weekStartDate($week));
+            $academicEnd = $monthCalendarData ? $monthCalendarData['cells']->last()['date'] : $academicStart->addDays(6);
+            $academicDays = $academicPlanner->calendar($timetable, $academicStart, $academicEnd, $academicTasks);
+            if (! $monthCalendarData) {
+                $academicLayout = $academicPlanner->layoutWeek($analysis, $academicDays, $academicStart);
+            }
+        }
         $shares = $timetable->shares()->latest()->get();
         $activeShare = $shares
             ->whereNull('revoked_at')
@@ -64,6 +84,8 @@ class TimetableController extends Controller
             'analysis',
             'activeShare',
             'shares',
+            'academicDays',
+            'academicLayout',
         ));
     }
 

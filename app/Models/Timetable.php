@@ -40,7 +40,7 @@ class Timetable extends Model
 
     public function courses(): HasMany
     {
-        return $this->hasMany(Course::class)->orderBy('sort_order')->orderBy('id');
+        return $this->hasMany(Course::class)->chaperone()->orderBy('sort_order')->orderBy('id');
     }
 
     public function meetings(): HasManyThrough
@@ -53,13 +53,18 @@ class Timetable extends Model
         return $this->hasMany(Share::class);
     }
 
+    public function academicTasks(): HasMany
+    {
+        return $this->hasMany(AcademicTask::class);
+    }
+
     public function currentWeek(): int
     {
         if (! $this->term_start_date) {
             return 1;
         }
 
-        $days = $this->term_start_date->copy()->startOfDay()
+        $days = $this->weekStartDate()->startOfDay()
             ->diffInDays(now($this->timezone)->startOfDay(), false);
         $week = (int) floor($days / 7) + 1;
 
@@ -72,6 +77,18 @@ class Timetable extends Model
             return $this->term_end_date->copy();
         }
 
-        return $this->term_start_date?->copy()->addDays(($this->week_count * 7) - 1);
+        return $this->weekStartDate()?->addDays(($this->week_count * 7) - 1);
+    }
+
+    public function weekStartDate(int $week = 1): ?Carbon
+    {
+        return $this->term_start_date
+            ? Carbon::parse($this->term_start_date->toDateString(), $this->timezone)->startOfWeek(Carbon::MONDAY)->addWeeks($week - 1)
+            : null;
+    }
+
+    public function occurrenceDate(int $week, int $weekday): ?Carbon
+    {
+        return $this->weekStartDate($week)?->addDays($weekday - 1);
     }
 }

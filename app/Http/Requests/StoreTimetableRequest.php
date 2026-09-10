@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -22,7 +23,7 @@ class StoreTimetableRequest extends FormRequest
             'term_name' => ['nullable', 'string', 'max:100'],
             'term_start_date' => ['nullable', 'date'],
             'term_end_date' => ['nullable', 'date', 'after_or_equal:term_start_date', 'required_without:week_count'],
-            'week_count' => ['nullable', 'required_without:term_end_date', 'integer', 'between:1,30'],
+            'week_count' => ['nullable', 'required_without:term_end_date', 'integer', 'between:1,31'],
             'timezone' => ['nullable', 'timezone:all'],
             'near_threshold_minutes' => ['required', 'integer', Rule::in(config('kexi.schedule.near_thresholds'))],
             'is_default' => ['sometimes', 'boolean'],
@@ -32,6 +33,9 @@ class StoreTimetableRequest extends FormRequest
     public function after(): array
     {
         return [function (Validator $validator): void {
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
             $start = $this->dateValue('term_start_date');
             $end = $this->dateValue('term_end_date');
             $weeks = $this->integer('week_count');
@@ -47,8 +51,8 @@ class StoreTimetableRequest extends FormRequest
             }
 
             $calculatedWeeks = $this->weeksBetween($start, $end);
-            if ($calculatedWeeks > 30) {
-                $validator->errors()->add('term_end_date', '学期范围最长为 30 周。');
+            if ($calculatedWeeks > 31) {
+                $validator->errors()->add('term_end_date', '学期范围最长为 31 个教学周。');
             }
 
             if ($weeks > 0 && $weeks !== $calculatedWeeks) {
@@ -81,7 +85,7 @@ class StoreTimetableRequest extends FormRequest
 
         $resolvedWeeks = $weeks ?? 18;
         $data['week_count'] = $resolvedWeeks;
-        $data['term_end_date'] = $start->addDays(($resolvedWeeks * 7) - 1)->toDateString();
+        $data['term_end_date'] = $start->startOfWeek(CarbonInterface::MONDAY)->addDays(($resolvedWeeks * 7) - 1)->toDateString();
 
         return $data;
     }
@@ -95,6 +99,6 @@ class StoreTimetableRequest extends FormRequest
 
     private function weeksBetween(CarbonImmutable $start, CarbonImmutable $end): int
     {
-        return (int) ceil(($start->diffInDays($end) + 1) / 7);
+        return (int) ceil(($start->startOfWeek(CarbonInterface::MONDAY)->diffInDays($end) + 1) / 7);
     }
 }

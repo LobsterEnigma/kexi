@@ -21,7 +21,7 @@ class MonthCalendar
      *     cells: Collection<int, array<string, mixed>>
      * }
      */
-    public function build(Timetable $timetable, ?string $requestedMonth, int $fallbackWeek): array
+    public function build(Timetable $timetable, ?string $requestedMonth, int $fallbackWeek, array $extraDates = []): array
     {
         $timezone = $timetable->timezone ?: config('kexi.display_timezone');
         $termStart = CarbonImmutable::parse(
@@ -34,7 +34,13 @@ class MonthCalendar
         )->endOfDay();
         $firstMonth = $termStart->startOfMonth();
         $lastMonth = $termEnd->startOfMonth();
-        $fallbackMonth = $termStart
+        foreach ($extraDates as $date) {
+            $extraMonth = CarbonImmutable::instance($date)->timezone($timezone)->startOfMonth();
+            $firstMonth = $firstMonth->min($extraMonth);
+            $lastMonth = $lastMonth->max($extraMonth);
+        }
+        $weekAnchor = $termStart->startOfWeek(CarbonInterface::MONDAY);
+        $fallbackMonth = $weekAnchor
             ->addWeeks(max(0, min($timetable->week_count, $fallbackWeek) - 1))
             ->startOfMonth();
         $month = $this->parseMonth($requestedMonth, $timezone) ?? $fallbackMonth;
@@ -57,7 +63,7 @@ class MonthCalendar
         for ($date = $gridStart; $date->lessThanOrEqualTo($gridEnd); $date = $date->addDay()) {
             $inTerm = $date->betweenIncluded($termStart, $termEnd);
             $week = $inTerm
-                ? intdiv((int) $termStart->diffInDays($date), 7) + 1
+                ? intdiv((int) $weekAnchor->diffInDays($date), 7) + 1
                 : null;
             $events = $inTerm
                 ? $this->eventsForDate($meetings, $date, $week)

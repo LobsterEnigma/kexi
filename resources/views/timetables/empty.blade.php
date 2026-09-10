@@ -67,7 +67,7 @@
 
                             <label class="wb-field-group">
                                 <span class="wb-label">学期总周数</span>
-                                <input class="wb-field" type="number" name="week_count" x-model.number="weekCount" x-on:change="syncEndFromWeeks()" min="1" max="30" required>
+                                <input class="wb-field" type="number" name="week_count" x-model.number="weekCount" x-on:change="syncEndFromWeeks()" min="1" max="31" required>
                             </label>
 
                             <label class="wb-field-group">

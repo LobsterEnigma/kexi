@@ -3,7 +3,7 @@
     $weekCount = max(1, (int) $timetable->week_count);
     $previousWeek = max(1, $weekNumber - 1);
     $nextWeek = min($weekCount, $weekNumber + 1);
-    $weekStartDate = $timetable->term_start_date?->copy()->addWeeks($weekNumber - 1);
+    $weekStartDate = $timetable->weekStartDate($weekNumber);
     $weekEndDate = $weekStartDate?->copy()->addDays(6);
     $weekDates = $weekStartDate
         ? collect(range(0, 6))->map(fn (int $day) => $weekStartDate->copy()->addDays($day))
@@ -28,7 +28,8 @@
         fn ($collection) => $collection->push($activeShare),
     );
     $newShareUrl = session('new_share_url');
-    $initialModal = $newShareUrl ? 'share' : old('_form');
+    $requestedDialog = request()->query('dialog');
+    $initialModal = $newShareUrl ? 'share' : (old('_form') ?: (in_array($requestedDialog, ['share', 'timetable-create'], true) ? $requestedDialog : null));
     $viewMode = ($viewMode ?? 'week') === 'month' ? 'month' : 'week';
     $isMonthView = $viewMode === 'month';
     $monthValue = $isMonthView ? data_get($monthCalendarData, 'month')?->format('Y-m') : null;
@@ -92,9 +93,7 @@
             $occurringWeeks = collect(range(1, $weekCount))
                 ->filter(fn (int $week): bool => $selectedMeeting->occursInWeek($week))
                 ->map(function (int $week) use ($selectedMeeting, $timetable, $weekdays, $canceledWeeks): array {
-                    $date = $timetable->term_start_date?->copy()
-                        ->addWeeks($week - 1)
-                        ->addDays((int) $selectedMeeting->weekday - 1);
+                    $date = $timetable->occurrenceDate($week, (int) $selectedMeeting->weekday);
 
                     return [
                         'week' => $week,
@@ -258,6 +257,17 @@
             $isMonthView ? '月课表' : '周课表',
         ]))),
     ];
+    $academicEvents = collect($academicLayout['academic'] ?? []);
+    if ($academicLayout) {
+        $items = collect($academicLayout['items']);
+        $itemsByDay = $items->groupBy(fn ($item) => (int) data_get($item, 'meeting.weekday'));
+        $dayStart = $academicLayout['day_start'];
+        $dayEnd = $academicLayout['day_end'];
+        $calendarHeight = max(60, $dayEnd - $dayStart);
+        $slotCount = (int) ceil($calendarHeight / 30);
+        $startHour = (int) floor($dayStart / 60);
+        $endHour = (int) ceil($dayEnd / 60);
+    }
 @endphp
 
 <x-app-layout>
@@ -359,7 +369,7 @@
                                 <input
                                     type="date"
                                     value="{{ $weekStartDate->toDateString() }}"
-                                    min="{{ $timetable->term_start_date->toDateString() }}"
+                                    min="{{ $timetable->weekStartDate()->toDateString() }}"
                                     max="{{ $termEndDate->toDateString() }}"
                                     x-on:change="goToDate($event.target.value)"
                                     aria-label="选择日期并跳转到对应教学周"
@@ -417,21 +427,6 @@
 
                 <div class="wb-mobile-controls relative">
                     <button
-                        class="wb-icon-btn relative"
-                        type="button"
-                        x-on:click="diagnosticsOpen = true"
-                        title="查看冲突与间隔"
-                        aria-label="查看冲突与间隔"
-                    >
-                        <i data-lucide="panel-right-open"></i>
-                        @if ($conflictCount + $nearCount > 0)
-                            <span class="absolute -right-1 -top-1 min-w-4 rounded-full bg-red-600 px-1 text-center text-[10px] font-bold leading-4 text-white">
-                                {{ min(99, $conflictCount + $nearCount) }}
-                            </span>
-                        @endif
-                    </button>
-
-                    <button
                         class="wb-icon-btn"
                         type="button"
                         x-on:click="mobileActionsOpen = ! mobileActionsOpen"
@@ -485,9 +480,13 @@
                     @if (! $timetable->term_start_date) aria-disabled="true" tabindex="-1" title="请先设置开学日期" @endif
                 >月视图</a>
                 <a class="wb-tab wb-tab--records" href="{{ route('timetables.cancellation-records', $timetable) }}">请假记录</a>
-                <button class="wb-tab wb-tab--diagnostics" type="button" aria-selected="false" x-on:click="diagnosticsOpen = true; diagnosticFilter = 'all'">
-                    学期问题
-                </button>
+                <div class="wb-toolbar-tools" role="group" aria-label="课表工具">
+                    <x-academic-reminders :timetable="$timetable" />
+                    <span class="wb-toolbar-tools__divider" aria-hidden="true"></span>
+                    <button class="wb-utility-btn" type="button" x-bind:aria-expanded="diagnosticsOpen" aria-label="课表检查" title="查看课程冲突与临近安排" x-on:click="diagnosticsOpen = !diagnosticsOpen; diagnosticFilter = 'all'">
+                        <i data-lucide="list-checks"></i><span>课表检查</span>
+                    </button>
+                </div>
 
                 <div class="wb-mobile-controls wb-week-control ml-auto" aria-label="{{ $isMonthView ? '月份切换' : '周次切换' }}">
                     @if ($isMonthView)
@@ -520,7 +519,7 @@
                                 <input
                                     type="date"
                                     value="{{ $weekStartDate->toDateString() }}"
-                                    min="{{ $timetable->term_start_date->toDateString() }}"
+                                    min="{{ $timetable->weekStartDate()->toDateString() }}"
                                     max="{{ $termEndDate->toDateString() }}"
                                     x-on:change="goToDate($event.target.value)"
                                     aria-label="选择日期并跳转到对应教学周"
@@ -589,6 +588,14 @@
                                     </div>
 
                                     <div class="month-day__events">
+                                        @php
+                                            $academicCell=$academicDays[$cellDate->toDateString()] ?? [];
+                                            $academicCellEvents=collect([...($academicCell['banners']??[]),...($academicCell['timed']??[])]);
+                                        @endphp
+                                        @foreach($academicCellEvents->take(3) as $academicEvent)
+                                            <a class="academic-calendar-chip {{ $academicEvent['completed']?'is-complete':'' }}" style="--task-color: {{ $academicEvent['color'] }}" href="{{ $academicEvent['url'] }}" title="{{ $academicEvent['title'] }} · {{ $academicEvent['label'] }} {{ $academicEvent['time']??'' }}"><span>{{ $academicEvent['completed']?'✓ ':'' }}{{ $academicEvent['label'] }} {{ $academicEvent['time']??'' }}</span><strong>{{ $academicEvent['title'] }}</strong></a>
+                                        @endforeach
+                                        @if($academicCellEvents->count()>3)<a class="month-day__more" href="{{ route('academic-tasks.index',['timetable'=>$timetable,'status'=>'all','date'=>$cellDate->toDateString()]) }}">查看全部 {{ $academicCellEvents->count() }} 项安排</a>@endif
                                         @foreach ($cellEvents as $meeting)
                                             @php
                                                 $course = $meeting->course;
@@ -649,6 +656,17 @@
                         @endforeach
                     </div>
 
+                    @if($weekDates->isNotEmpty() && collect($academicDays)->contains(fn($day)=>!empty($day['banners'])))
+                        <div class="academic-deadlines"><div class="academic-deadlines__label">截止 / 开放</div>
+                            @foreach($weekDates as $date)<div class="academic-deadlines__day" data-agenda-date="{{ $date->toDateString() }}">
+                                @php
+                                    $banners=collect($academicDays[$date->toDateString()]['banners']??[]);
+                                @endphp
+                                @foreach($banners->take(3) as $academicEvent)<a class="academic-calendar-chip {{ $academicEvent['completed']?'is-complete':'' }}" style="--task-color: {{ $academicEvent['color'] }}" href="{{ $academicEvent['url'] }}" title="{{ $academicEvent['title'] }} · {{ $academicEvent['label'] }}"><span>{{ $academicEvent['completed']?'✓ ':'' }}{{ $academicEvent['label'] }}</span><strong>{{ $academicEvent['title'] }}</strong></a>@endforeach
+                                @if($banners->count()>3)<a class="month-day__more" href="{{ route('academic-tasks.index',['timetable'=>$timetable,'status'=>'all','date'=>$date->toDateString()]) }}">另有 {{ $banners->count()-3 }} 项</a>@endif
+                            </div>@endforeach
+                        </div>
+                    @endif
                     <div class="calendar-body" style="height: {{ $calendarHeight }}px">
                         <div class="calendar-time-axis" style="height: {{ $calendarHeight }}px">
                             @for ($hour = $startHour; $hour < $endHour; $hour++)
@@ -721,10 +739,15 @@
                                         </span>
                                     </button>
                                 @endforeach
+                                @foreach($academicEvents->where('weekday',$weekdayNumber) as $academicEvent)
+                                    <a class="academic-time-event {{ $academicEvent['end_minute']-$academicEvent['start_minute']<30?'academic-time-event--micro':($academicEvent['end_minute']-$academicEvent['start_minute']<50?'academic-time-event--compact':'') }} {{ $academicEvent['completed']?'is-complete':'' }} {{ $academicEvent['conflict']?'has-conflict':'' }}" href="{{ $academicEvent['url'] }}" style="--task-color: {{ $academicEvent['color'] }}; --event-top: {{ $academicEvent['start_minute']-$dayStart }}px; --event-height: {{ max(18,$academicEvent['end_minute']-$academicEvent['start_minute']) }}px; --lane: {{ $academicEvent['lane'] }}; --lane-count: {{ $academicEvent['lane_count'] }}" title="{{ $academicEvent['label'] }} · {{ $academicEvent['title'] }} · {{ $academicEvent['full_time'] }} · {{ $academicEvent['location'] }}{{ $academicEvent['conflict']?' · 时间重叠':'' }}">
+                                        <small>{{ $academicEvent['completed']?'已完成':$academicEvent['label'] }}{{ $academicEvent['conflict']?' · 时间重叠':'' }}</small><strong>{{ $academicEvent['title'] }}</strong><span>{{ $academicEvent['time'] }}</span>@if($academicEvent['location'])<span>{{ $academicEvent['location'] }}</span>@endif
+                                    </a>
+                                @endforeach
                             </div>
                         @endforeach
 
-                        @if ($items->isEmpty())
+                        @if ($items->isEmpty() && empty($academicDays))
                             <div class="wb-empty-calendar">
                                 <i data-lucide="calendar-range"></i>
                                 <strong class="text-sm text-slate-800">第 {{ $weekNumber }} 周还没有课程</strong>
@@ -1124,7 +1147,7 @@
 
                 <div class="wb-export-meta">
                     <span>{{ $isMonthView ? '2400 × 1800' : '2400 × 1600' }} PNG</span>
-                    <span>课程颜色、地点和状态均会保留</span>
+                    <span>保留课程颜色、地点和状态；不包含个人任务与学习计划</span>
                 </div>
             </div>
 
@@ -1279,7 +1302,7 @@
                         </label>
                         <label class="wb-field-group">
                             <span class="wb-label">总周数</span>
-                            <input class="wb-field" type="number" name="week_count" x-model.number="weekCount" x-on:change="syncEndFromWeeks()" min="1" max="30" required>
+                            <input class="wb-field" type="number" name="week_count" x-model.number="weekCount" x-on:change="syncEndFromWeeks()" min="1" max="31" required>
                         </label>
                         <label class="wb-field-group">
                             <span class="wb-label">临近提醒阈值</span>
@@ -1343,7 +1366,7 @@
                         </label>
                         <label class="wb-field-group">
                             <span class="wb-label">总周数</span>
-                            <input class="wb-field" type="number" name="week_count" x-model.number="weekCount" x-on:change="syncEndFromWeeks()" min="1" max="30" required>
+                            <input class="wb-field" type="number" name="week_count" x-model.number="weekCount" x-on:change="syncEndFromWeeks()" min="1" max="31" required>
                         </label>
                         <label class="wb-field-group">
                             <span class="wb-label">临近提醒阈值</span>

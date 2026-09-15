@@ -32,6 +32,7 @@
                 <span class="wb-label">确认密码</span>
                 <input class="wb-field" type="password" name="password_confirmation" required autocomplete="new-password" placeholder="再次输入密码">
             </label>
+            <x-turnstile action="register" />
         </div>
 
         <div class="border-t border-slate-200 bg-slate-50 px-6 py-4 sm:px-8">

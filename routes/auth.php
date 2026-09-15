@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\NewPasswordController;
+use App\Http\Controllers\Auth\PasskeyController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
@@ -12,6 +13,8 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
+    Route::post('passkeys/login/options', [PasskeyController::class, 'loginOptions'])->middleware('throttle:10,1')->name('passkeys.login.options');
+    Route::post('passkeys/login', [PasskeyController::class, 'login'])->middleware('throttle:10,1')->name('passkeys.login');
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->middleware('registration.open')
         ->name('register');
@@ -22,7 +25,7 @@ Route::middleware('guest')->group(function () {
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 
-    Route::post('login', [AuthenticatedSessionController::class, 'store']);
+    Route::post('login', [AuthenticatedSessionController::class, 'store'])->middleware('throttle:20,1');
 
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');
@@ -39,6 +42,12 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
+    Route::middleware(['active', 'throttle:10,1'])->group(function () {
+        Route::post('passkeys/register/options', [PasskeyController::class, 'registerOptions'])->name('passkeys.register.options');
+        Route::post('passkeys/register', [PasskeyController::class, 'register'])->name('passkeys.register');
+        Route::patch('passkeys/{passkey}', [PasskeyController::class, 'rename'])->name('passkeys.rename');
+        Route::delete('passkeys/{passkey}', [PasskeyController::class, 'destroy'])->name('passkeys.destroy');
+    });
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
 

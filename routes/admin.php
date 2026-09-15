@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\LoginSecurityController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\ShareController;
 use App\Http\Controllers\Admin\UserController;
@@ -15,6 +16,7 @@ Route::prefix(config('kexi.admin_path'))
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::get('/shares', [ShareController::class, 'index'])->name('shares.index');
         Route::get('/settings', [SettingController::class, 'edit'])->name('settings.edit');
+        Route::get('/login-security', [LoginSecurityController::class, 'edit'])->name('security.edit');
         Route::get('/audits', [AuditLogController::class, 'index'])->name('audits.index');
 
         Route::middleware('throttle:admin-mutation')->group(function (): void {
@@ -38,6 +40,7 @@ Route::prefix(config('kexi.admin_path'))
                 ->name('users.sharing.enable');
 
             Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
+            Route::put('/login-security', [LoginSecurityController::class, 'update'])->name('security.update');
 
             Route::patch('/shares/{share}/disable', [ShareController::class, 'disable'])
                 ->whereNumber('share')

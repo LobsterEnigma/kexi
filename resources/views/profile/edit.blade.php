@@ -24,6 +24,7 @@
                 <nav class="mt-6 space-y-1" aria-label="账户设置目录">
                     <a class="wb-nav__item" href="#profile-information"><i data-lucide="user-round"></i><span>个人资料</span></a>
                     <a class="wb-nav__item" href="#profile-password"><i data-lucide="settings"></i><span>登录密码</span></a>
+                    <a class="wb-nav__item" href="#profile-passkeys"><i data-lucide="fingerprint"></i><span>通行密钥</span></a>
                     <a class="wb-nav__item text-red-700" href="#profile-delete"><i data-lucide="trash-2"></i><span>删除账户</span></a>
                 </nav>
 
@@ -42,6 +43,9 @@
                     @include('profile.partials.update-password-form')
                 </div>
 
+                <div id="profile-passkeys" class="scroll-mt-6 rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+                    @include('profile.partials.passkeys')
+                </div>
                 <div id="profile-delete" class="scroll-mt-6 rounded-lg border border-red-200 bg-white p-5 shadow-sm sm:p-7">
                     @include('profile.partials.delete-user-form')
                 </div>

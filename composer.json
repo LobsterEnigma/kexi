@@ -12,11 +12,13 @@
         "ext-dom": "*",
         "ext-fileinfo": "*",
         "ext-mbstring": "*",
+        "ext-openssl": "*",
         "ext-pdo": "*",
         "ext-xml": "*",
         "php": "^8.2",
         "laravel/framework": "^12.0",
-        "laravel/tinker": "^2.10.1"
+        "laravel/tinker": "^2.10.1",
+        "lbuchs/webauthn": "^2.2"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

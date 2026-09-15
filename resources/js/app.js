@@ -1,6 +1,7 @@
 import './bootstrap';
 import { registerAcademic } from './academic';
 import { registerPersonal } from './personal';
+import { registerLoginSecurity } from './login-security';
 import {
     downloadTimetablePng,
     exportThemeOptions,
@@ -31,6 +32,8 @@ import {
     Eye,
     EyeOff,
     FileText,
+    Fingerprint,
+    ShieldCheck,
     Link2,
     LogOut,
     MapPin,
@@ -79,6 +82,8 @@ const lucideIcons = {
     Eye,
     EyeOff,
     FileText,
+    Fingerprint,
+    ShieldCheck,
     Link2,
     LogOut,
     MapPin,
@@ -575,6 +580,7 @@ Alpine.data('timetableWorkbench', (config = {}) => ({
 
 registerAcademic(Alpine);
 registerPersonal(Alpine);
+registerLoginSecurity(Alpine);
 Alpine.start();
 
 window.requestAnimationFrame(() => refreshIcons());

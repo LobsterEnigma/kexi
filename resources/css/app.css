@@ -1,5 +1,6 @@
 @import './academic.css';
 @import './academic-export.css';
+@import './login-security.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

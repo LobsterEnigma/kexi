@@ -25,5 +25,5 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        $exceptions->dontFlash('mail_password');
+        $exceptions->dontFlash(['mail_password', 'turnstile_secret', 'cf-turnstile-response']);
     })->create();

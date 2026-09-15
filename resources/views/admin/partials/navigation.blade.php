@@ -5,6 +5,7 @@
             'admin.users.index' => '用户',
             'admin.shares.index' => '分享',
             'admin.settings.edit' => '系统设置',
+            'admin.security.edit' => '登录安全',
             'admin.audits.index' => '审计日志',
         ] as $route => $label)
             <a href="{{ route($route) }}"

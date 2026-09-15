@@ -35,6 +35,11 @@ class User extends Authenticatable
         return $this->hasMany(PersonalEvent::class);
     }
 
+    public function passkeys(): HasMany
+    {
+        return $this->hasMany(Passkey::class);
+    }
+
     public function isBanned(): bool
     {
         return $this->banned_at !== null;
@@ -76,6 +81,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'passkey_handle',
     ];
 
     /**

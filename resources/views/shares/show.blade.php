@@ -44,9 +44,7 @@
         <header class="wb-header">
             <div class="wb-header__top">
                 <div class="flex min-w-0 items-center gap-3">
-                    <span class="wb-brand__mark shrink-0" aria-hidden="true">
-                        <i data-lucide="book-open" class="h-5 w-5"></i>
-                    </span>
+                    <x-brand-mark />
                     <h1 class="wb-title">
                         {{ $timetable->term_name ? $timetable->term_name.' · ' : '' }}{{ $timetable->name }}
                     </h1>

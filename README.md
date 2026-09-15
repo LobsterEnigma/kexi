@@ -5,6 +5,7 @@
 ## 已实现功能
 
 - 邮箱注册、登录、密码重置和账户管理
+- 管理员可上传自定义站点 Logo，支持预览、尺寸建议和恢复默认
 - 管理员可配置 Turnstile 注册/登录人机验证，以及 Passkey 通行密钥登录；用户可添加、重命名和删除自己的密钥
 - 每位用户管理多张课表，每门课程支持多个时间段
 - 学期范围既可填写总周数，也可填写学期截止日期，两者自动换算
@@ -51,7 +52,7 @@ php -d extension=pdo_sqlite artisan serve
 
 ## 使用干净部署包
 
-本次服务器包同时包含生产 `vendor/` 和 `public/build/`，可直接覆盖更新，无需在服务器安装依赖或构建前端。GitHub 源码包不包含这些目录，使用源码时需要 Composer 和 npm 构建。已有网站更新及登录安全配置见 [Turnstile 与 Passkey 更新说明](docs/updates-20260914-login-security.md)。
+服务器包同时包含生产 `vendor/` 和 `public/build/`，可直接覆盖更新，无需在服务器安装依赖或构建前端。GitHub 源码包不包含这些目录，使用源码时需要 Composer 和 npm 构建。安装、更新、Logo 与登录安全配置见 [部署指南](docs/deployment.md)；功能新增与问题修复统一见 [开发记录](development.md)。
 
 ## 学业任务怎么用
 

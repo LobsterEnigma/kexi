@@ -12,6 +12,7 @@ class SiteSettings
 {
     private const TYPES = [
         'site_name' => 'string',
+        'site_logo' => 'nullable_string',
         'site_url' => 'nullable_string',
         'timezone' => 'string',
         'session_lifetime_minutes' => 'integer',

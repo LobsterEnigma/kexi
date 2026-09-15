@@ -8,6 +8,7 @@ class RuntimeSiteConfiguration
 {
     private const KEYS = [
         'site_name',
+        'site_logo',
         'site_url',
         'timezone',
         'session_lifetime_minutes',
@@ -34,6 +35,7 @@ class RuntimeSiteConfiguration
 
         config([
             'app.name' => $values['site_name'],
+            'kexi.site_logo' => app(SiteLogo::class)->exists($values['site_logo']) ? $values['site_logo'] : null,
             'kexi.display_timezone' => $values['timezone'],
             'session.lifetime' => $values['session_lifetime_minutes'],
             'mail.default' => $values['mail_mailer'],

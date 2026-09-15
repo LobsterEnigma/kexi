@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\LoginSecurityController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\ShareController;
+use App\Http\Controllers\Admin\SiteLogoController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -40,6 +41,7 @@ Route::prefix(config('kexi.admin_path'))
                 ->name('users.sharing.enable');
 
             Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
+            Route::post('/settings/logo', [SiteLogoController::class, 'update'])->name('settings.logo');
             Route::put('/login-security', [LoginSecurityController::class, 'update'])->name('security.update');
 
             Route::patch('/shares/{share}/disable', [ShareController::class, 'disable'])

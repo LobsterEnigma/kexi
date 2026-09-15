@@ -11,6 +11,70 @@
     <div class="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
         @include('admin.partials.feedback')
 
+        <section class="site-logo-panel" aria-labelledby="site-logo-heading"
+                 x-data="{ preview: null, filename: '', issue: '', choose(event) { if (this.preview) URL.revokeObjectURL(this.preview); this.preview = null; this.filename = ''; this.issue = ''; const file = event.target.files[0]; if (!file) return; if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type) || file.size > 2097152) { this.issue = '请选择不超过 2 MB 的 PNG、JPG 或 WebP 图片。'; event.target.value = ''; return; } this.preview = URL.createObjectURL(file); this.filename = file.name; }, destroy() { if (this.preview) URL.revokeObjectURL(this.preview); } }">
+            <div class="site-logo-panel__header">
+                <div>
+                    <h2 id="site-logo-heading">站点 Logo</h2>
+                    <p>让登录页、课表和分享页拥有统一的品牌标识。</p>
+                </div>
+                <span class="site-logo-panel__status" x-text="filename ? '待保存' : @js(config('kexi.site_logo') ? '自定义 Logo' : '默认图标')"></span>
+            </div>
+            <div class="site-logo-panel__body">
+                <div class="site-logo-sample">
+                    <span class="site-logo-sample__caption">品牌预览</span>
+                    <div class="site-logo-sample__brand">
+                        <div class="site-logo-preview" aria-label="Logo 预览">
+                            <img x-cloak x-show="preview" :src="preview" alt="待上传的 Logo" x-on:error="if (preview) { issue = '图片无法预览，请选择有效图片。'; preview = null; filename = ''; $refs.logo.value = ''; }">
+                            <span x-show="!preview"><x-brand-mark /></span>
+                        </div>
+                        <strong>{{ config('app.name', '课隙') }}</strong>
+                    </div>
+                    <p>图片等比展示，保留完整标识</p>
+                </div>
+                <div class="site-logo-upload">
+                    <form id="site-logo-upload-form" method="POST" action="{{ route('admin.settings.logo') }}" enctype="multipart/form-data">
+                        @csrf
+                        <input type="hidden" name="settings_revision" value="{{ $settingsRevision }}">
+                        <input type="hidden" name="logo_action" value="upload">
+                        <h3>上传品牌图片</h3>
+                        <p id="site-logo-help" class="site-logo-upload__hint">推荐使用 <strong>512 × 512 像素</strong>的方形图片，透明底效果更自然。</p>
+                        <div class="site-logo-upload__specs">
+                            <span>PNG / WebP / JPG</span>
+                            <span>最大 2 MB</span>
+                            <span>宽高 32–4096 px</span>
+                        </div>
+                        <div class="site-logo-upload__picker">
+                            <label class="wb-btn cursor-pointer focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2">
+                                <span>选择图片</span>
+                                <input id="site-logo-file" x-ref="logo" type="file" name="logo" required accept="image/png,image/jpeg,image/webp"
+                                       class="sr-only" @change="choose($event)" aria-describedby="site-logo-help">
+                            </label>
+                            <span class="site-logo-upload__filename" x-text="filename || '选择图片，即可预览效果'"></span>
+                        </div>
+                        <p x-cloak x-show="issue" x-text="issue" class="mt-2 text-xs text-red-700" role="alert"></p>
+                    </form>
+                </div>
+            </div>
+            <div class="site-logo-panel__footer">
+                <div class="site-logo-panel__feedback" aria-live="polite">
+                    <p x-show="!filename">{{ config('kexi.site_logo') ? '正在使用自定义 Logo' : '正在使用默认图标，可随时更换' }}</p>
+                    <p x-cloak x-show="filename" class="text-blue-700">预览尚未保存，点击下方按钮后生效。</p>
+                </div>
+                <div class="site-logo-panel__actions">
+                    @if(config('kexi.site_logo'))
+                        <form method="POST" action="{{ route('admin.settings.logo') }}">
+                            @csrf
+                            <input type="hidden" name="settings_revision" value="{{ $settingsRevision }}">
+                            <input type="hidden" name="logo_action" value="reset">
+                            <button type="submit" class="wb-btn">恢复默认 Logo</button>
+                        </form>
+                    @endif
+                    <button type="submit" form="site-logo-upload-form" class="wb-btn wb-btn--primary site-logo-panel__save" :disabled="!filename">保存 Logo</button>
+                </div>
+            </div>
+        </section>
+
         <form
             method="POST"
             action="{{ route('admin.settings.update') }}"

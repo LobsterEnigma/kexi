@@ -4,9 +4,7 @@
     <main class="flex min-h-[100dvh] items-center justify-center bg-slate-50 px-4 py-10">
         <div class="w-full max-w-md">
             <div class="mb-6 flex items-center justify-center gap-3">
-                <span class="wb-brand__mark bg-white" aria-hidden="true">
-                    <i data-lucide="book-open" class="h-5 w-5"></i>
-                </span>
+                <x-brand-mark />
                 <span class="text-2xl font-bold text-slate-900">{{ config('app.name', '课隙') }}</span>
             </div>
 

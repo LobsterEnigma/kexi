@@ -14,6 +14,7 @@ return [
 
     'settings_defaults' => [
         'site_name' => '课隙',
+        'site_logo' => null,
         'site_url' => null,
         'timezone' => 'Asia/Shanghai',
         'session_lifetime_minutes' => 120,

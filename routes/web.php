@@ -9,8 +9,12 @@ use App\Http\Controllers\PersonalEventController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicShareController;
 use App\Http\Controllers\ShareController;
+use App\Http\Controllers\SiteLogoController;
 use App\Http\Controllers\TimetableController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/brand/logo/{name}', SiteLogoController::class)
+    ->where('name', '[a-f0-9]{32}\.(png|jpg|webp)')->name('site-logo');
 
 Route::get('/', function () {
     return auth()->check()

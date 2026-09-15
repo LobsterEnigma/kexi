@@ -119,6 +119,44 @@
         box-shadow: 0 5px 12px rgb(37 99 235 / 22%);
     }
 
+    .wb-brand__mark { flex-shrink: 0; }
+    .wb-brand__mark--custom { border: 0; background: transparent; box-shadow: none; }
+    .wb-brand__image { display: block; width: 100%; height: 100%; object-fit: contain; }
+    .site-logo-panel { margin-bottom: 24px; overflow: hidden; border: 1px solid #dfe5ed; border-radius: 8px; background: #fff; }
+    .site-logo-panel__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px 24px; }
+    .site-logo-panel__header h2 { color: #17243b; font-size: 15px; font-weight: 700; }
+    .site-logo-panel__header p { margin-top: 5px; color: #748094; font-size: 12px; line-height: 1.7; }
+    .site-logo-panel__status { flex-shrink: 0; padding: 3px 8px; border: 1px solid #e7ebf1; border-radius: 5px; background: #f8fafc; color: #667085; font-size: 11px; }
+    .site-logo-panel__body { display: grid; grid-template-columns: minmax(200px, .8fr) minmax(0, 1.4fr); align-items: center; gap: 28px; padding: 0 24px 24px; }
+    .site-logo-sample { padding: 18px 20px; border: 1px solid #e7ecf3; border-radius: 8px; background: #f8fafc; }
+    .site-logo-sample__caption { font-size: 11px; color: #8490a2; }
+    .site-logo-sample__brand { display: flex; align-items: center; gap: 12px; margin: 14px 0; }
+    .site-logo-sample__brand strong { min-width: 0; overflow-wrap: anywhere; color: #17243b; font-size: 21px; font-weight: 700; line-height: 1.4; }
+    .site-logo-sample > p { font-size: 11px; color: #8490a2; }
+    .site-logo-preview { display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; flex-shrink: 0; }
+    .site-logo-preview > img { width: 100%; height: 100%; object-fit: contain; }
+    .site-logo-preview .wb-brand__mark { width: 40px; height: 40px; }
+    .site-logo-preview .wb-brand__mark--custom { width: 48px; height: 48px; }
+    .site-logo-upload { min-width: 0; }
+    .site-logo-upload h3 { color: #344054; font-size: 13px; font-weight: 600; }
+    .site-logo-upload__hint { margin-top: 7px; font-size: 12px; line-height: 1.8; color: #667085; }
+    .site-logo-upload__hint strong { font-weight: 600; color: #475467; }
+    .site-logo-upload__specs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; font-size: 11px; color: #748094; }
+    .site-logo-upload__specs span { padding: 2px 6px; border-radius: 4px; background: #f3f5f8; }
+    .site-logo-upload__picker { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+    .site-logo-upload__picker > label { flex-shrink: 0; }
+    .site-logo-upload__filename { min-width: 0; overflow-wrap: anywhere; font-size: 12px; color: #748094; }
+    .site-logo-panel__footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 24px; border-top: 1px solid #edf0f5; background: #fcfdff; }
+    .site-logo-panel__feedback { font-size: 12px; color: #748094; line-height: 1.7; }
+    .site-logo-panel__actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .site-logo-panel .site-logo-panel__save:disabled { border-color: #e3e8ef; background: #edf1f6; color: #748094; box-shadow: none; opacity: 1; transform: none; }
+    @media (max-width: 640px) {
+        .site-logo-panel__header { padding: 18px; gap: 10px; }
+        .site-logo-panel__body { grid-template-columns: minmax(0, 1fr); gap: 20px; padding: 0 18px 20px; }
+        .site-logo-panel__footer { align-items: stretch; flex-direction: column; gap: 12px; padding: 14px 18px; }
+        .site-logo-panel__actions { justify-content: flex-end; flex-wrap: wrap; }
+    }
+
     .wb-nav {
         display: flex;
         flex-direction: column;

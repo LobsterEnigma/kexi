@@ -41,7 +41,7 @@ class ShareController extends Controller
             'password' => ['nullable', 'string', 'min:6', 'max:100', 'confirmed'],
             'expires_at' => ['nullable', 'date_format:Y-m-d\\TH:i'],
         ]);
-        $expiresAt = $this->parseExpiration($data['expires_at'] ?? null, (string) $settings->get('timezone'));
+        $expiresAt = $this->parseExpiration($data['expires_at'] ?? null, $timetable->timezone);
 
         $token = bin2hex(random_bytes(32));
         $share = $timetable->shares()->create([

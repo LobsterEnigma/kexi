@@ -4,8 +4,13 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        @auth
+            <meta name="user-timezone" content="{{ auth()->user()->timezone }}">
+            <meta name="user-timezone-url" content="{{ route('profile.timezone') }}">
+        @endauth
 
         @include('layouts.partials.document-title')
+        @include('layouts.partials.theme')
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -14,7 +19,7 @@
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    @php($usesFixedWorkbench = request()->routeIs('dashboard', 'timetables.*', 'public-shares.*', 'academic-tasks.*', 'academic-entries.*', 'personal-events.*'))
+    @php($usesFixedWorkbench = request()->routeIs('dashboard', 'timetables.*', 'public-shares.*', 'academic-tasks.*', 'academic-entries.*', 'personal-events.*', 'calendar.*'))
     @php($usesCustomLayout = $usesFixedWorkbench || request()->routeIs('profile.*'))
 
     <body class="font-sans antialiased {{ $usesFixedWorkbench ? 'overflow-hidden bg-white' : 'bg-gray-100' }}">

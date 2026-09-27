@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\PersonalEvent;
 use App\Models\Timetable;
 use App\Models\User;
+use App\Support\CalendarDisplaySpan;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
@@ -79,16 +80,18 @@ class PersonalPlanner
         foreach ($this->occurrences($timetable->user, $from, $to) as $item) {
             $start = $item['starts_at']->timezone($timetable->timezone);
             $end = $item['ends_at']->timezone($timetable->timezone);
+            $overview = CalendarDisplaySpan::isOverview($start, $end, (bool) $item['all_day']);
             $base = ['personal' => true, 'title' => $item['title'], 'type' => $item['category'], 'color' => $item['color'], 'completed' => false,
                 'course' => null, 'kind' => 'personal', 'location' => $item['location'], 'conflict' => false,
+                'overview' => $overview, 'all_day' => (bool) $item['all_day'],
                 'url' => $public ? null : route('personal-events.edit', ['event' => $item['event_id'], 'occurrence' => $item['occurrence_date'], 'timetable' => $timetable->id]),
-                'label' => $item['all_day'] ? '全天 · '.$item['category'] : '个人 · '.$item['category'], 'full_time' => $start->format('n/j H:i').'–'.$end->format('n/j H:i')];
+                'label' => $overview ? CalendarDisplaySpan::label($start, $end, (bool) $item['all_day']) : '个人 · '.$item['category'], 'full_time' => $start->format('n/j H:i').'–'.$end->format('n/j H:i')];
             for ($date = $start->startOfDay()->max($from->startOfDay()); $date->lte($to) && $date->lt($end); $date = $date->addDay()) {
                 $a = $start->max($date);
                 $b = $end->min($date->addDay());
                 $endMinute = $b->isSameDay($date) ? $b->hour * 60 + $b->minute : 1440;
                 $row = [...$base, 'start_minute' => $a->hour * 60 + $a->minute, 'end_minute' => $endMinute, 'time' => $item['all_day'] ? '全天' : $a->format('H:i').'–'.($endMinute === 1440 ? '24:00' : $b->format('H:i'))];
-                $days[$date->toDateString()][$item['all_day'] ? 'banners' : 'timed'][] = $row;
+                $days[$date->toDateString()][$overview ? 'banners' : 'timed'][] = $row;
             }
         }
 
@@ -125,7 +128,9 @@ class PersonalPlanner
             $academic = app(AcademicPlanner::class)->calendar($timetable, $localFrom, $localTo);
             for ($day = $localFrom; $day->lt($localTo); $day = $day->addDay()) {
                 $week = (int) floor(CarbonImmutable::instance($timetable->weekStartDate())->diffInDays($day) / 7) + 1;
-                $ranges = $academic[$day->toDateString()]['timed'] ?? [];
+                $dayEvents = $academic[$day->toDateString()] ?? [];
+                // Moving long events to the overview must not erase their real time conflicts.
+                $ranges = [...($dayEvents['timed'] ?? []), ...array_filter($dayEvents['banners'] ?? [], fn ($event) => isset($event['start_minute'], $event['end_minute']))];
                 if ($week >= 1 && $week <= $timetable->week_count) {
                     foreach (app(ScheduleAnalyzer::class)->forWeek($timetable, $week)['items'] as $item) {
                         if ((int) $item['meeting']->weekday === $day->isoWeekday() && $item['status'] !== 'canceled') {

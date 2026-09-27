@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AcademicTask;
 use App\Models\Timetable;
+use App\Support\CalendarDisplaySpan;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
@@ -70,12 +71,14 @@ class AcademicPlanner
         if ($start->gt($to->endOfDay()) || $end->lte($from->startOfDay())) {
             return;
         }
+        $overview = CalendarDisplaySpan::isOverview($start, $end);
         for ($date = $start->startOfDay()->max($from->startOfDay()); $date->lte($to) && $date->lt($end); $date = $date->addDay()) {
             $segmentStart = $start->max($date);
             $segmentEnd = $end->min($date->addDay());
             $startMinute = $segmentStart->hour * 60 + $segmentStart->minute;
             $endMinute = $segmentEnd->isSameDay($date) ? $segmentEnd->hour * 60 + $segmentEnd->minute : 1440;
-            $days[$date->toDateString()]['timed'][] = [...$base, 'kind' => $kind, 'label' => $kind === 'study' ? '学习计划' : '考试 / 活动',
+            $days[$date->toDateString()][$overview ? 'banners' : 'timed'][] = [...$base, 'kind' => $kind, 'overview' => $overview,
+                'label' => $overview ? CalendarDisplaySpan::label($start, $end) : ($kind === 'study' ? '学习计划' : '考试 / 活动'),
                 'start_minute' => $startMinute, 'end_minute' => $endMinute, 'time' => $segmentStart->format('H:i').'–'.($endMinute === 1440 ? '24:00' : $segmentEnd->format('H:i')),
                 'full_time' => $start->format('n/j H:i').'–'.$end->format('n/j H:i'), 'location' => $location, 'conflict' => false];
         }

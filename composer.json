@@ -6,6 +6,7 @@
     "keywords": ["laravel", "timetable", "schedule", "university"],
     "license": "MIT",
     "require": {
+        "php": "^8.2",
         "ext-bcmath": "*",
         "ext-ctype": "*",
         "ext-curl": "*",
@@ -15,10 +16,10 @@
         "ext-openssl": "*",
         "ext-pdo": "*",
         "ext-xml": "*",
-        "php": "^8.2",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
-        "lbuchs/webauthn": "^2.2"
+        "lbuchs/webauthn": "^2.2",
+        "sabre/vobject": "^4.5"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

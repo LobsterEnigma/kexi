@@ -121,7 +121,7 @@ class TimetableController extends Controller
     public function store(StoreTimetableRequest $request): RedirectResponse
     {
         $data = $request->normalized();
-        $data['timezone'] ??= config('kexi.display_timezone');
+        $data['timezone'] ??= $request->user()->timezone ?: 'UTC';
 
         $timetable = DB::transaction(function () use ($request, $data): Timetable {
             $hasTimetables = $request->user()->timetables()->exists();
@@ -145,6 +145,7 @@ class TimetableController extends Controller
     {
         $this->authorize('update', $timetable);
         $data = $request->normalized();
+        $data['timezone'] ??= $timetable->timezone;
 
         DB::transaction(function () use ($request, $timetable, $data): void {
             if ($data['is_default'] ?? false) {

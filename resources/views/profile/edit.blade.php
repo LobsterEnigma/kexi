@@ -20,9 +20,11 @@
                 <p class="text-xs font-semibold uppercase text-slate-500">账户</p>
                 <h1 class="mt-2 text-2xl font-bold leading-8 text-slate-900">账户设置</h1>
                 <p class="mt-2 text-sm leading-6 text-slate-600">管理个人资料、登录密码与账户数据。</p>
+                <div class="mt-5"><x-theme-switcher /><p class="mt-2 text-xs text-slate-500">外观偏好保存在此浏览器。</p></div>
 
                 <nav class="mt-6 space-y-1" aria-label="账户设置目录">
                     <a class="wb-nav__item" href="#profile-information"><i data-lucide="user-round"></i><span>个人资料</span></a>
+                    <a class="wb-nav__item" href="#profile-timezone"><i data-lucide="clock-3"></i><span>时区与课表</span></a>
                     <a class="wb-nav__item" href="#profile-password"><i data-lucide="settings"></i><span>登录密码</span></a>
                     <a class="wb-nav__item" href="#profile-passkeys"><i data-lucide="fingerprint"></i><span>通行密钥</span></a>
                     <a class="wb-nav__item text-red-700" href="#profile-delete"><i data-lucide="trash-2"></i><span>删除账户</span></a>
@@ -39,6 +41,9 @@
                     @include('profile.partials.update-profile-information-form')
                 </div>
 
+                <div id="profile-timezone" class="scroll-mt-6 rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+                    @include('profile.partials.timezone')
+                </div>
                 <div id="profile-password" class="scroll-mt-6 rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
                     @include('profile.partials.update-password-form')
                 </div>

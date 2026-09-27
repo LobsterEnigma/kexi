@@ -515,7 +515,7 @@ const withPersonalEvents = (data) => {
     const appearance = (event) => ({ accent: event.color, border: event.color, surface: '#f1f8f6', text: '#254a42' });
     const item = (event) => ({ ...event, code: '', teacher: '', status: 'normal', appearance: appearance(event) });
     if (data.view === 'month') return { ...data, cells: data.cells.map((cell) => ({ ...cell, events: [...cell.events, ...personal.filter(e => e.date === cell.date).map(item)] })) };
-    const items = [...data.items.map(i => ({ ...i })), ...personal.filter(e => !e.allDay).map(item)];
+    const items = [...data.items.map(i => ({ ...i })), ...personal.filter(e => !e.allDay && !e.overview).map(item)];
     for (let day = 1; day <= 7; day++) {
         const sorted = items.filter(e => e.weekday === day).sort((a,b) => a.startMinute-b.startMinute || a.endMinute-b.endMinute);
         let cluster = [], end = 0;

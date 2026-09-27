@@ -38,6 +38,7 @@ class RegisteredUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'timezone' => ['nullable', 'string', 'max:64', 'timezone:all'],
         ]);
 
         $user = DB::transaction(function () use ($request): User {
@@ -51,15 +52,16 @@ class RegisteredUserController extends Controller
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
+                'timezone' => $request->input('timezone'),
             ]);
 
-            $localNow = now(config('kexi.display_timezone'));
+            $localNow = now($user->timezone ?: 'UTC');
             $season = $localNow->month >= 7 ? '秋季' : '春季';
             $user->timetables()->create([
                 'name' => '主课表',
                 'term_name' => $localNow->year.' '.$season,
                 'week_count' => 18,
-                'timezone' => config('kexi.display_timezone'),
+                'timezone' => $user->timezone ?: 'UTC',
                 'near_threshold_minutes' => 30,
                 'is_default' => true,
             ]);

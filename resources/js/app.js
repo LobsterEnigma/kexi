@@ -1,7 +1,10 @@
 import './bootstrap';
+import { registerTheme } from './theme';
 import { registerAcademic } from './academic';
 import { registerPersonal } from './personal';
 import { registerLoginSecurity } from './login-security';
+import { registerCalendarConnections } from './calendar-connect';
+import { registerTimezone } from './timezone';
 import {
     downloadTimetablePng,
     exportThemeOptions,
@@ -11,6 +14,9 @@ import {
 import Alpine from 'alpinejs';
 import {
     Bell,
+    Sun,
+    Moon,
+    Monitor,
     ListChecks,
     BookOpen,
     CalendarDays,
@@ -32,6 +38,9 @@ import {
     Eye,
     EyeOff,
     FileText,
+    FileUp,
+    Sparkles,
+    Info,
     Fingerprint,
     ShieldCheck,
     Link2,
@@ -61,6 +70,9 @@ import {
 
 const lucideIcons = {
     Bell,
+    Sun,
+    Moon,
+    Monitor,
     ListChecks,
     BookOpen,
     CalendarDays,
@@ -82,6 +94,9 @@ const lucideIcons = {
     Eye,
     EyeOff,
     FileText,
+    FileUp,
+    Sparkles,
+    Info,
     Fingerprint,
     ShieldCheck,
     Link2,
@@ -579,8 +594,11 @@ Alpine.data('timetableWorkbench', (config = {}) => ({
 }));
 
 registerAcademic(Alpine);
+registerTheme(Alpine);
 registerPersonal(Alpine);
 registerLoginSecurity(Alpine);
+registerCalendarConnections(Alpine);
+registerTimezone(Alpine);
 Alpine.start();
 
 window.requestAnimationFrame(() => refreshIcons());

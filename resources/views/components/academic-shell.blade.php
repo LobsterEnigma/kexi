@@ -27,7 +27,7 @@
                 </section>
             @endif
             {{ $slot }}
-            <p class="wb-records-privacy"><i data-lucide="eye-off"></i>{{ request()->routeIs('personal-events.*')?'个人安排默认私密；公开分享与图片导出由你主动选择。':'学业任务与学习安排仅自己可见。' }}时间按 {{ $timetable->timezone }} 显示。</p>
+            <p class="wb-records-privacy"><i data-lucide="eye-off"></i>{{ request()->routeIs('calendar.*') ? '导出与订阅由你选择内容，私人备注始终不包含。' : (request()->routeIs('personal-events.*')?'个人安排默认私密；公开分享与图片导出由你主动选择。':'学业任务默认仅自己可见，可通过日历连接主动导出或订阅。') }}时间按 {{ $timetable->timezone }} 显示。</p>
         </div>
         </div>
         <div class="wb-drawer-backdrop" x-cloak x-show="sidebarOpen" x-on:click="closeSidebar()" x-transition.opacity></div>

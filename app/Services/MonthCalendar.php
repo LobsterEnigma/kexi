@@ -23,7 +23,7 @@ class MonthCalendar
      */
     public function build(Timetable $timetable, ?string $requestedMonth, int $fallbackWeek, array $extraDates = []): array
     {
-        $timezone = $timetable->timezone ?: config('kexi.display_timezone');
+        $timezone = $timetable->timezone ?: ($timetable->user?->timezone ?: 'UTC');
         $termStart = CarbonImmutable::parse(
             $timetable->term_start_date->toDateString(),
             $timezone,

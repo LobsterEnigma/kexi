@@ -33,6 +33,7 @@
                 <input class="wb-field" type="password" name="password_confirmation" required autocomplete="new-password" placeholder="再次输入密码">
             </label>
             <x-turnstile action="register" />
+            <x-timezone-picker :value="old('timezone')" :detect="!old('timezone')" label="你的默认时区" help="默认识别当前设备，可自行修改；注册后的第一张课表使用此时区。" />
         </div>
 
         <div class="border-t border-slate-200 bg-slate-50 px-6 py-4 sm:px-8">

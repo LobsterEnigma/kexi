@@ -32,7 +32,7 @@ class PersonalEventController extends Controller
     {
         $filters = $request->validate(['month' => ['nullable', 'date_format:Y-m'], 'q' => ['nullable', 'string', 'max:160'], 'canceled' => ['nullable', 'boolean']]);
         $timetable = $this->context($request);
-        $timezone = $timetable?->timezone ?? config('kexi.display_timezone');
+        $timezone = $timetable?->timezone ?? $request->user()->timezone ?? 'UTC';
         $month = CarbonImmutable::parse(($filters['month'] ?? now($timezone)->format('Y-m')).'-01', $timezone);
         $rows = $planner->occurrences($request->user(), $month, $month->endOfMonth(), $request->boolean('canceled'));
         if ($request->filled('q')) {
@@ -47,7 +47,7 @@ class PersonalEventController extends Controller
     public function create(Request $request)
     {
         $timetable = $this->context($request);
-        $event = new PersonalEvent(['timezone' => $timetable?->timezone ?? config('kexi.display_timezone'), 'color' => '#168575', 'category' => '生活', 'repeat' => 'none', 'weekdays' => []]);
+        $event = new PersonalEvent(['timezone' => $request->user()->timezone ?? $timetable?->timezone ?? 'UTC', 'color' => '#168575', 'category' => '生活', 'repeat' => 'none', 'weekdays' => []]);
 
         return view('personal.edit', ['timetable' => $timetable, 'event' => $event, 'occurrence' => null, 'row' => null, 'conflicts' => []]);
     }

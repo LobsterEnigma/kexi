@@ -29,7 +29,7 @@
     );
     $newShareUrl = session('new_share_url');
     $requestedDialog = request()->query('dialog');
-    $initialModal = $newShareUrl ? 'share' : (old('_form') ?: (in_array($requestedDialog, ['share', 'timetable-create'], true) ? $requestedDialog : null));
+    $initialModal = $newShareUrl ? 'share' : (old('_form') ?: (in_array($requestedDialog, ['share', 'timetable-create', 'timetable-settings'], true) ? $requestedDialog : null));
     $viewMode = ($viewMode ?? 'week') === 'month' ? 'month' : 'week';
     $isMonthView = $viewMode === 'month';
     $monthValue = $isMonthView ? data_get($monthCalendarData, 'month')?->format('Y-m') : null;
@@ -256,7 +256,8 @@
             return collect([...($day['banners'] ?? []), ...($day['timed'] ?? [])])->map(fn ($event) => [
                 'date' => $date, 'weekday' => \Carbon\CarbonImmutable::parse($date)->isoWeekday(), 'name' => $event['title'], 'category' => $event['type'],
                 'color' => $event['color'], 'location' => $event['location'], 'time' => $event['time'],
-                'allDay' => $event['time'] === '全天', 'startMinute' => $event['start_minute'], 'endMinute' => $event['end_minute'],
+                'allDay' => $event['time'] === '全天', 'overview' => (bool) ($event['overview'] ?? false),
+                'startMinute' => $event['start_minute'], 'endMinute' => $event['end_minute'],
             ]);
         })->values()->all(),
         'filename' => trim(implode('-', array_filter([
@@ -686,16 +687,7 @@
                         @endforeach
                     </div>
 
-                    @if($weekDates->isNotEmpty() && collect($academicDays)->contains(fn($day)=>!empty($day['banners'])))
-                        <div class="academic-deadlines"><div class="academic-deadlines__label">全天 / 事项</div>
-                            @foreach($weekDates as $date)<div class="academic-deadlines__day" data-agenda-date="{{ $date->toDateString() }}">
-                                @php
-                                    $banners=collect($academicDays[$date->toDateString()]['banners']??[]);
-                                @endphp
-                                <x-calendar-extras :events="$banners" />
-                            </div>@endforeach
-                        </div>
-                    @endif
+                    <x-calendar-overview :days="$academicDays" :dates="$weekDates" />
                     <div class="calendar-body" style="height: {{ $calendarHeight }}px">
                         <div class="calendar-time-axis" style="height: {{ $calendarHeight }}px">
                             @for ($hour = $startHour; $hour < $endHour; $hour++)
@@ -1236,7 +1228,7 @@
                         <label class="wb-field-group wb-field-group--full">
                             <span class="wb-label">失效时间</span>
                             <input class="wb-field" type="datetime-local" name="expires_at" value="{{ old('expires_at') }}">
-                            <span class="wb-help">留空表示一直有效，最长可设置为一年。</span>
+                            <span class="wb-help">留空表示一直有效，最长可设置为一年。按课表时区 {{ $timetable->timezone }} 填写。</span>
                         </label>
                         <label class="wb-field-group">
                             <span class="wb-label">访问密码</span>
@@ -1344,6 +1336,7 @@
                                 @endforeach
                             </select>
                         </label>
+                        <x-timezone-picker :value="old('_form') === 'timetable-create' ? old('timezone') : auth()->user()->timezone" :detect="old('_form') !== 'timetable-create' && !auth()->user()->timezone" label="课表时区" help="按学校所在地选择。课程、学业任务及日历预览都使用此时区。" />
                         <label class="wb-field-group wb-field-group--full flex items-center gap-2">
                             <input class="rounded border-slate-300 text-blue-600 focus:ring-blue-500" type="checkbox" name="is_default" value="1" @checked(old('is_default'))>
                             <span class="text-sm text-slate-700">设为默认课表</span>
@@ -1361,7 +1354,7 @@
             <div class="wb-modal-header">
                 <div>
                     <h2 class="wb-modal-title">课表设置</h2>
-                    <p class="wb-modal-subtitle">调整学期范围与临近课程提醒阈值。</p>
+                    <p class="wb-modal-subtitle">调整学期范围、时区与临近课程提醒阈值。</p>
                 </div>
                 <button class="wb-icon-btn" type="button" x-on:click="closeDialog()" title="关闭" aria-label="关闭"><i data-lucide="x"></i></button>
             </div>
@@ -1388,6 +1381,7 @@
                             <span class="wb-label">学期名称</span>
                             <input class="wb-field" type="text" name="term_name" value="{{ old('_form') === 'timetable-settings' ? old('term_name') : $timetable->term_name }}" maxlength="100">
                         </label>
+                        <x-timezone-picker :value="old('_form') === 'timetable-settings' ? old('timezone', $timetable->timezone) : $timetable->timezone" label="课表时区" help="更改后，课程保留原来的星期和上课钟点；任务与个人安排保持真实时间，换算到此时区显示。若以前按错误时区录入任务，请保存后检查其时间。" />
                         <label class="wb-field-group">
                             <span class="wb-label">开学日期</span>
                             <input class="wb-field" type="date" name="term_start_date" x-model="startDate" x-on:change="startChanged()">

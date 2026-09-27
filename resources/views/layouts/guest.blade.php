@@ -6,6 +6,7 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
         @include('layouts.partials.document-title')
+        @include('layouts.partials.theme')
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
@@ -22,6 +23,7 @@
                 </section>
 
                 <p class="mt-5 text-center text-xs leading-5 text-slate-500">课程安排清晰一点，周间空隙从容一点。</p>
+                <div class="mt-5 flex justify-center"><x-theme-switcher /></div>
             </div>
         </main>
     </body>

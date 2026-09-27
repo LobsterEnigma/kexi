@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AcademicTaskController;
 use App\Http\Controllers\AcademicTaskExportController;
+use App\Http\Controllers\CalendarConnectionController;
 use App\Http\Controllers\CourseCancellationRecordController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\CourseMeetingCancellationController;
@@ -25,11 +26,21 @@ Route::get('/', function () {
 Route::get('/s/{token}', [PublicShareController::class, 'show'])
     ->middleware('throttle:share-lookup')
     ->name('public-shares.show');
+Route::get('/calendar/feed/{token}.ics', [CalendarConnectionController::class, 'feed'])->where('token', '[a-f0-9]{64}')->middleware('throttle:60,1')->name('calendar.feed');
 Route::post('/s/{token}/unlock', [PublicShareController::class, 'unlock'])
     ->middleware('throttle:share-password')
     ->name('public-shares.unlock');
 
 Route::middleware(['auth', 'active'])->group(function () {
+    Route::prefix('/timetables/{timetable}/calendar')->group(function () {
+        Route::get('/', [CalendarConnectionController::class, 'index'])->name('calendar.index');
+        Route::post('/preview', [CalendarConnectionController::class, 'preview'])->middleware('throttle:10,1')->name('calendar.upload');
+        Route::get('/preview/{batch}', [CalendarConnectionController::class, 'showPreview'])->name('calendar.preview');
+        Route::post('/preview/{batch}', [CalendarConnectionController::class, 'storeImport'])->middleware('throttle:10,1')->name('calendar.import');
+        Route::get('/download', [CalendarConnectionController::class, 'download'])->middleware('throttle:20,1')->name('calendar.download');
+        Route::post('/subscriptions', [CalendarConnectionController::class, 'subscribe'])->middleware('throttle:10,1')->name('calendar.subscribe');
+        Route::delete('/subscriptions/{subscription}', [CalendarConnectionController::class, 'revoke'])->name('calendar.revoke');
+    });
     Route::get('/personal-events', [PersonalEventController::class, 'index'])->name('personal-events.index');
     Route::get('/personal-events/create', [PersonalEventController::class, 'create'])->name('personal-events.create');
     Route::post('/personal-events', [PersonalEventController::class, 'store'])->name('personal-events.store');
@@ -80,6 +91,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::patch('/timetables/{timetable}/shares/{share}', [ShareController::class, 'update'])->name('shares.update');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile/timezone', [ProfileController::class, 'timezone'])->name('profile.timezone');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });

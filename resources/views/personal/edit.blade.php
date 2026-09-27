@@ -13,7 +13,7 @@
     $colorPresets = ['#168575'=>'松绿', '#2f67c7'=>'湖蓝', '#7257cf'=>'鸢紫', '#bd4f76'=>'玫瑰', '#247ba0'=>'青蓝', '#c06135'=>'陶橙', '#558b2f'=>'草绿', '#a16207'=>'琥珀'];
     $formConfig = [
         'allDay' => $allDay, 'repeat' => old('repeat', $event->repeat), 'scope' => $scope,
-        'timezone' => $timezone, 'detectTimezone' => !$editing && !session()->hasOldInput(),
+        'timezone' => $timezone, 'detectTimezone' => !$editing && !session()->hasOldInput() && !auth()->user()->timezone,
         'startLocal' => old('start_local', old('start_date', $start->format('Y-m-d')).'T'.(old('start_time') ?: $start->format('H:i'))),
         'endLocal' => old('end_local', old('end_date', $end->format('Y-m-d')).'T'.(old('end_time') ?: $end->format('H:i'))),
     ];

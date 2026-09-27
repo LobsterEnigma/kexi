@@ -24,14 +24,24 @@ async function post(url, data) {
 export function registerLoginSecurity(Alpine) {
     Alpine.data('turnstileWidget', config => ({
         token: '', message: '正在加载人机验证…', widget: null,
-        async init() { await this.render(); },
+        themeListener: null, destroyed: false,
+        async init() {
+            this.themeListener = () => {
+                if (this.widget !== null && window.turnstile) window.turnstile.remove(this.widget);
+                this.widget = null;
+                this.render();
+            };
+            window.addEventListener('kexi:theme', this.themeListener);
+            await this.render();
+        },
         async render() {
             this.token = '';
             try {
                 const api = await loadTurnstile();
+                if (this.destroyed) return;
                 if (this.widget !== null) { api.reset(this.widget); this.message = '请完成人机验证。'; return; }
                 this.widget = api.render(this.$refs.widget, {
-                    sitekey: config.siteKey, action: config.action, theme: 'light', language: 'zh-cn',
+                    sitekey: config.siteKey, action: config.action, theme: document.documentElement.dataset.theme || 'light', language: 'zh-cn',
                     size: this.$el.clientWidth < 300 ? 'compact' : 'flexible', 'response-field': false,
                     callback: token => { this.token = token; this.message = '验证已完成'; },
                     'expired-callback': () => { this.token = ''; this.message = '验证已过期，请重新验证。'; },
@@ -40,7 +50,7 @@ export function registerLoginSecurity(Alpine) {
                 this.message = '请完成人机验证。';
             } catch { this.message = '验证组件未能加载，请检查网络后重试。'; }
         },
-        destroy() { if (this.widget !== null && window.turnstile) window.turnstile.remove(this.widget); },
+        destroy() { this.destroyed = true; window.removeEventListener('kexi:theme', this.themeListener); if (this.widget !== null && window.turnstile) window.turnstile.remove(this.widget); },
     }));
     Alpine.data('passkeyAction', config => ({
         busy: false, error: '', supported: !!(window.isSecureContext && window.PublicKeyCredential && navigator.credentials),
@@ -50,9 +60,11 @@ export function registerLoginSecurity(Alpine) {
             try {
                 if (!this.supported) throw new Error('此浏览器或连接不支持通行密钥，请使用 HTTPS 和支持的浏览器。');
                 const creating = config.mode === 'register';
+                // Alpine's $el can be the clicked button; $root stays on the form component.
+                const form = this.$root;
                 const payload = creating ? {name: this.$refs.keyName.value, password: this.$refs.keyPassword.value} : {
-                    'cf-turnstile-response': this.$el.querySelector('[name="cf-turnstile-response"]')?.value || '',
-                    remember: this.$el.querySelector('[name="remember"]')?.checked || false,
+                    'cf-turnstile-response': form.querySelector('[name="cf-turnstile-response"]')?.value || '',
+                    remember: form.querySelector('[name="remember"]')?.checked || false,
                 };
                 const options = await post(config.options, payload);
                 if (creating) this.$refs.keyPassword.value = '';

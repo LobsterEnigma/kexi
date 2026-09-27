@@ -14,6 +14,7 @@
             <div class="wb-records-topbar__inner">
                 <a class="wb-records-brand" href="{{ route('timetables.show', $timetable) }}" aria-label="返回我的课表"><x-brand-mark /><span>{{ config('app.name', '课隙') }}</span></a>
                 <span class="wb-records-breadcrumb"><span>我的课表</span><i data-lucide="chevron-right"></i>请假记录</span>
+                <x-theme-switcher compact />
                 <a class="wb-btn" href="{{ route('timetables.show', $timetable) }}"><i data-lucide="chevron-left"></i>返回课表</a>
             </div>
         </header>

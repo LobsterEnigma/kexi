@@ -8,7 +8,7 @@
 @unless($passkeysEnabled)<p class="mt-4 text-sm text-slate-500">管理员暂未开启通行密钥登录。已有密钥仍可管理，开启后可继续使用。</p>@endunless
 <div class="auth-passkey-list">
 @forelse($passkeys as $key)
-    <details class="auth-passkey-item"><summary><span class="auth-settings__icon"><i data-lucide="fingerprint"></i></span><span class="auth-passkey-item__text"><strong>{{ $key->name }}</strong><small>{{ $key->rp_id }} · {{ $key->last_used_at ? '最近使用 '.$key->last_used_at->timezone(config('kexi.display_timezone'))->format('Y/m/d H:i') : '尚未用于登录' }}</small></span><span class="auth-passkey-item__manage">管理<i data-lucide="chevron-down"></i></span></summary>
+    <details class="auth-passkey-item"><summary><span class="auth-settings__icon"><i data-lucide="fingerprint"></i></span><span class="auth-passkey-item__text"><strong>{{ $key->name }}</strong><small>{{ $key->rp_id }} · {{ $key->last_used_at ? '最近使用 '.$key->last_used_at->timezone($user->timezone ?: 'UTC')->format('Y/m/d H:i') : '尚未用于登录' }}</small></span><span class="auth-passkey-item__manage">管理<i data-lucide="chevron-down"></i></span></summary>
         <form class="auth-passkey-item__form" method="POST" action="{{ route('passkeys.rename',$key) }}">@csrf
             <label class="wb-field-group"><span class="wb-label">密钥名称</span><input class="wb-field" name="name" value="{{ $key->name }}" required maxlength="80"></label>
             <label class="wb-field-group"><span class="wb-label">当前登录密码</span><input class="wb-field" type="password" name="password" required autocomplete="current-password" placeholder="验证是你本人在操作"></label>

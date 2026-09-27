@@ -9,6 +9,7 @@
                     <span class="text-2xl font-bold text-slate-900">{{ config('app.name', '课隙') }}</span>
                 </div>
 
+                <x-theme-switcher compact />
                 <a class="wb-btn" href="{{ route('profile.edit') }}">
                     <i data-lucide="user-cog"></i>
                     账户
@@ -55,6 +56,7 @@
                                 <span class="wb-label">学期名称</span>
                                 <input class="wb-field" type="text" name="term_name" value="{{ old('term_name') }}" maxlength="100" placeholder="例：2026 秋季">
                             </label>
+                            <x-timezone-picker :value="old('timezone', auth()->user()->timezone)" :detect="!old('timezone', auth()->user()->timezone)" label="课表时区" help="按学校所在地选择，默认使用你的个人时区。" />
 
                             <label class="wb-field-group">
                                 <span class="wb-label">开学日期</span>

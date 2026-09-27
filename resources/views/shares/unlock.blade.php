@@ -8,6 +8,7 @@
                 <span class="text-2xl font-bold text-slate-900">{{ config('app.name', '课隙') }}</span>
             </div>
 
+            <div class="mb-5 flex justify-center"><x-theme-switcher /></div>
             <section class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
                 <div class="px-6 pb-5 pt-7 text-center sm:px-8">
                     <span class="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-md bg-blue-50 text-blue-700">

@@ -107,7 +107,7 @@
                     </label>
 
                     <label class="block">
-                        <span class="text-sm font-medium text-gray-700">显示时区</span>
+                        <span class="text-sm font-medium text-gray-700">管理后台时区</span>
                         <input class="mt-1 block w-full border-gray-300 text-sm focus:border-gray-500 focus:ring-gray-500"
                                type="text" name="timezone" list="timezone-suggestions" required
                                value="{{ old('timezone', $settings['timezone']) }}" placeholder="Asia/Shanghai">
@@ -116,7 +116,7 @@
                                 <option value="{{ $timezone }}"></option>
                             @endforeach
                         </datalist>
-                        <span class="mt-1 block text-xs text-gray-500">日期时间按此时区显示，数据库统一使用 UTC。</span>
+                        <span class="mt-1 block text-xs text-gray-500">仅用于后台审计与管理时间显示；用户使用自己的时区，课表单独设置。数据库统一使用 UTC。</span>
                     </label>
 
                     <label class="block">

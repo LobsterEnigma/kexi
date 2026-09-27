@@ -51,6 +51,7 @@
                 </div>
 
                 <div class="wb-header__actions wb-header__desktop-actions">
+                    <x-theme-switcher compact />
                     <div class="wb-week-control" aria-label="周次切换">
                         <a class="wb-icon-btn" href="{{ route('public-shares.show', ['token' => $token, 'week' => $previousWeek]) }}" title="上一周" aria-label="上一周">
                             <i data-lucide="chevron-left"></i>
@@ -63,6 +64,7 @@
                 </div>
 
                 <div class="wb-mobile-controls">
+                    <x-theme-switcher compact />
                     <button class="wb-icon-btn relative" type="button" x-on:click="diagnosticsOpen = true" title="查看问题" aria-label="查看问题">
                         <i data-lucide="panel-right-open"></i>
                         @if ($issueCount > 0)
@@ -109,7 +111,7 @@
                         @endforeach
                     </div>
 
-                    @if(collect($personalDays)->contains(fn($day)=>!empty($day['banners'])))<div class="academic-deadlines"><div class="academic-deadlines__label">全天安排</div>@foreach($weekDates as $date)<div class="academic-deadlines__day">@foreach($personalDays[$date->toDateString()]['banners']??[] as $event)<article class="academic-calendar-chip" style="--task-color: {{ $event['color'] }}"><span>{{ $event['label'] }}</span><strong>{{ $event['title'] }}</strong><span>{{ $event['location'] }}</span></article>@endforeach</div>@endforeach</div>@endif
+                    <x-calendar-overview :days="$personalDays" :dates="$weekDates" />
                     <div class="calendar-body" style="height: {{ $calendarHeight }}px">
                         <div class="calendar-time-axis" style="height: {{ $calendarHeight }}px">
                             @for ($hour = $startHour; $hour < $endHour; $hour++)
